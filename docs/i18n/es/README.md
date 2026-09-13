@@ -87,34 +87,6 @@
 <a href="https://pipeshub.com/connectors"><img src="https://raw.githubusercontent.com/pipeshub-ai/media-assets/main/images/Github%20Connector%20Readme.png" alt="PipesHub Connectors" width="900"/></a>
 </p>
 
-## Stack tecnológico
-
-### Frontend
-
-| Tecnología | Descripción |
-|-----------|-------------|
-| Next.js | UI con App Router (React renderizado en el cliente) |
-| TypeScript | Superconjunto de JavaScript con tipado fuerte |
-| Radix UI Themes | Primitivos de componentes accesibles y estilos |
-| Zod | Validación y análisis de esquemas |
-| React Hook Form | Gestión flexible del estado de formularios |
-
-### Backend
-
-| Tecnología | Descripción |
-|-----------|-------------|
-| FastAPI | Framework web de Python de alto rendimiento |
-| LangChain | Framework para pipelines de LLM |
-| Qdrant | Motor de búsqueda por similitud vectorial |
-| Neo4j / ArangoDB | Base de datos de grafos |
-| Kafka / Redis Streams | Plataforma de streaming de eventos distribuida |
-| Redis | Almacenamiento en caché |
-| Redis / etcd3 | Almacén de configuración clave-valor distribuido |
-| Celery | Sistema de colas de tareas distribuidas |
-| Docling | Kit de herramientas de análisis y extracción de documentos |
-| PyMuPDF | Biblioteca de procesamiento de PDF |
-| pandas | Análisis y manipulación de datos |
-
 ## 🚀 Guía de despliegue
 
 PipesHub (la plataforma de IA para el trabajo) puede ejecutarse localmente o desplegarse en la nube mediante Docker Compose.
@@ -251,7 +223,19 @@ Nota: Usa HTTPS para los despliegues en la nube. HTTP puede provocar bloqueos de
 
 ### ¿Qué proveedores de LLM admite PipesHub?
 
-PipesHub funciona con el modelo "Usa tu propio modelo": puedes usar cualquier proveedor de LLM. Despliega en tu VPC con los modelos que prefieras. El stack tecnológico incluye LangChain para pipelines y flujos de trabajo de LLM.
+PipesHub funciona con el modelo "Usa tu propio modelo": puedes usar cualquier proveedor de LLM. Despliega en tu VPC con los modelos que prefieras.
+
+### ¿Cuál es el stack tecnológico?
+
+PipesHub tiene tres partes:
+
+- **Aplicación web** (Next.js) — búsqueda, chat y administración en el navegador.
+- **API** (Node.js) — cuentas, permisos, bases de conocimiento y archivos.
+- **Servicios Python** — los conectores sincronizan tus fuentes; la indexación analiza documentos; la consulta responde con citas.
+
+Esos servicios llaman a **modelos de IA que tú aportas**. Un **modelo de embeddings** convierte el texto en vectores para buscar. Un **LLM** escribe la respuesta citada. Usa cualquier proveedor o un modelo local (Ollama); un servidor local de embeddings es el valor por defecto.
+
+Los datos están en un grafo de conocimiento (Neo4j por defecto, o ArangoDB), un almacén de vectores (Qdrant) y MongoDB. Redis es la caché. Los archivos viven en disco o en almacenamiento de objetos. Los servicios se pasan trabajo por Redis en una máquina local, o por Kafka en un despliegue más grande. Consulta la [visión general del sistema](https://docs.pipeshub.com/system-overview).
 
 ### ¿Qué es la función de recuperación con grafo de conocimiento?
 

@@ -87,34 +87,6 @@
 <a href="https://pipeshub.com/connectors"><img src="https://raw.githubusercontent.com/pipeshub-ai/media-assets/main/images/Github%20Connector%20Readme.png" alt="PipesHub Connectors" width="900"/></a>
 </p>
 
-## 技術スタック
-
-### フロントエンド
-
-| 技術 | 説明 |
-|-----------|-------------|
-| Next.js | App Router の UI（クライアントレンダリングの React） |
-| TypeScript | 強い型付けを持つ JavaScript のスーパーセット |
-| Radix UI Themes | アクセシブルなコンポーネントプリミティブとスタイリング |
-| Zod | スキーマ検証とパース |
-| React Hook Form | 柔軟なフォーム状態管理 |
-
-### バックエンド
-
-| 技術 | 説明 |
-|-----------|-------------|
-| FastAPI | 高性能な Python Web フレームワーク |
-| LangChain | LLM パイプライン向けフレームワーク |
-| Qdrant | ベクトル類似度検索エンジン |
-| Neo4j / ArangoDB | グラフデータベース |
-| Kafka / Redis Streams | 分散イベントストリーミングプラットフォーム |
-| Redis | キャッシュ |
-| Redis / etcd3 | 分散キーバリュー構成ストア |
-| Celery | 分散タスクキューシステム |
-| Docling | ドキュメント解析・抽出ツールキット |
-| PyMuPDF | PDF 処理ライブラリ |
-| pandas | データ分析・操作 |
-
 ## 🚀 デプロイガイド
 
 PipesHub（職場向け AI プラットフォーム）は、ローカルで実行することも、Docker Compose を使用してクラウドにデプロイすることもできます。
@@ -251,7 +223,19 @@ docker compose -f docker-compose.prod.yml -p pipeshub-ai up -d
 
 ### PipesHub はどの LLM プロバイダーに対応していますか？
 
-PipesHub は「自前のモデルを使用（Bring Your Own Model）」方式で、任意の LLM プロバイダーを使用できます。お好みのモデルを VPC 内にデプロイしてください。技術スタックには、LLM パイプラインとワークフローのための LangChain が含まれます。
+PipesHub は「自前のモデルを使用（Bring Your Own Model）」方式で、任意の LLM プロバイダーを使用できます。お好みのモデルを VPC 内にデプロイしてください。
+
+### 技術スタックは何ですか？
+
+PipesHub は次の 3 つの部分でできています。
+
+- **Web アプリ** (Next.js) — ブラウザ上の検索、チャット、管理画面。
+- **API** (Node.js) — アカウント、権限、ナレッジベース、ファイル。
+- **Python サービス** — コネクタがソースを同期し、索引が文書を解析し、クエリが引用付きで答えます。
+
+これらのサービスは **あなたが用意する AI モデル** を呼び出します。**埋め込みモデル** がテキストを検索用ベクトルにし、**LLM** が引用付きの回答を書きます。任意のプロバイダーでもローカルモデル (Ollama) でもよく、埋め込みはローカルサーバーが既定です。
+
+データはナレッジグラフ (既定は Neo4j、代替は ArangoDB)、ベクトルストア (Qdrant)、MongoDB にあります。キャッシュは Redis です。ファイルはディスクまたはオブジェクトストレージに置きます。サービス同士の作業の受け渡しは、ローカルでは Redis、規模が大きい場合は Kafka です。詳しくは [システム概要](https://docs.pipeshub.com/system-overview) を参照してください。
 
 ### ナレッジグラフ検索機能とは何ですか？
 
