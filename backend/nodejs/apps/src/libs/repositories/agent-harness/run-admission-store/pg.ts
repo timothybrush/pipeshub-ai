@@ -24,6 +24,7 @@ import {
   rootRunDocument,
   rootRunRequirements,
   sessionJournalFeatures,
+  durableSessionOrigin,
   durableSessionTitle,
 } from '../../../../modules/agent-harness/domain/admission';
 import { pinnedHarnessMajor } from '../../../../modules/agent-harness/domain/rollout';
@@ -373,6 +374,9 @@ export class PgRunAdmissionStore
           title: createdSession.title,
           model: command.input.model,
           now,
+          ...(command.trigger !== undefined
+            ? { origin: durableSessionOrigin(command) }
+            : {}),
         },
         tx,
       );

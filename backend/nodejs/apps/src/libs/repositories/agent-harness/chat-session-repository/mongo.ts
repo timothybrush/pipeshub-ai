@@ -122,6 +122,9 @@ export class HarnessChatSessionRepository implements ChatSessionRepository<Tx> {
         harnessVersion: 'durable-v1',
         harnessLedger: EMPTY_LEDGER,
         modelInfo: session.model,
+        ...(session.origin !== undefined
+          ? { metadata: { origin: session.origin } }
+          : {}),
       },
     ]);
   }

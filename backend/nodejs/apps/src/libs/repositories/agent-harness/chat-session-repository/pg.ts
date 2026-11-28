@@ -159,6 +159,9 @@ export class PgHarnessChatSessionRepository implements ChatSessionRepository<Tx>
         harnessVersion: 'durable-v1',
         harnessLedger: EMPTY_LEDGER,
         modelInfo: session.model as Record<string, unknown>,
+        ...(session.origin !== undefined
+          ? { metadata: { origin: session.origin } }
+          : {}),
       },
       tx,
     );

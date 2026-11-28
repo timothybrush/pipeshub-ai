@@ -13,6 +13,7 @@
  */
 import 'reflect-metadata';
 import { expect } from 'chai';
+import { scheduledConversationOrigin } from '../../../src/modules/agent-harness/transport/scheduled-turn-mark';
 import { PgConversationRepository } from '../../../src/libs/repositories/conversation/pg';
 import {
   getConversationRepository,
@@ -631,6 +632,23 @@ for (const bin of pgBins()) {
             actorId: owner,
           }),
         ).to.equal(null);
+      });
+
+      it('ADR-SCH-02 D3 on PostgreSQL: a scheduled run\'s conversation records its schedule as its origin', async () => {
+        const org = hexOrg();
+        const owner = hexOrg();
+        const sessionId = hexOrg();
+        const origin = { kind: 'schedule' as const, scheduleId: 'sch-1', firingId: 'fir-1', scheduleName: 'Morning joke' };
+        await transactAs(
+          (tx) =>
+            sessions.createDurableSession(
+              { orgId: org, actorId: owner, sessionId, title: 'Morning joke', model: MODEL as never, now: 1, origin },
+              tx,
+            ),
+          org,
+        );
+        const stored = await transactAs(() => repo().findById(sessionId), org);
+        expect(scheduledConversationOrigin(stored?.metadata as never)).to.deep.equal(origin);
       });
 
       it('an agent session is found only under its agent', async () => {

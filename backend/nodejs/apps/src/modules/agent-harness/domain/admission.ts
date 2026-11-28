@@ -1,3 +1,4 @@
+import type { ScheduleSessionOrigin } from './schedules';
 import type { AdmissionQuotaCaps } from './admission-quotas';
 import { runPolicyFields } from './run-policy-fields';
 import type { RunAttribution } from './principal';
@@ -274,8 +275,23 @@ export const admissionScopeKey = (command: AdmissionIdentity): string =>
 
 /** The title a conversation a turn starts is stored with: its first message, cut to 100 characters. */
 export const durableSessionTitle = (
-  command: Pick<AdmitRunCommand, 'input'>,
-): string => command.input.query.slice(0, 100);
+  command: Pick<AdmitRunCommand, 'input' | 'trigger'>,
+): string =>
+  // A schedule's run is titled with the schedule, as its classic turn is; a person's chat with its first ask.
+  (command.trigger?.scheduleName || command.input.query).slice(0, 100);
+
+/** The schedule a scheduled run's new conversation records as its origin (ADR-SCH-02 D3); none for a person's chat. */
+export const durableSessionOrigin = (
+  command: Pick<AdmitRunCommand, 'trigger'>,
+): ScheduleSessionOrigin | undefined =>
+  command.trigger === undefined
+    ? undefined
+    : {
+        kind: 'schedule',
+        scheduleId: command.trigger.scheduleId,
+        firingId: command.trigger.firingId,
+        scheduleName: command.trigger.scheduleName ?? '',
+      };
 
 export interface RunAdmissionResult {
   sessionId: string;

@@ -1,9 +1,9 @@
 {
  "generatedBy": "scripts/harness_test_inventory.py",
  "componentMap": "docs/test-plan/data/components.json",
- "harnessTestFiles": 2049,
- "claimedTestFiles": 3996,
- "claimedTests": 42943,
+ "harnessTestFiles": 2055,
+ "claimedTestFiles": 4035,
+ "claimedTests": 43449,
  "claimedFilesByLevel": {
   "cohesion": 64,
   "component": 37,
@@ -13,12 +13,12 @@
   "e2e-client": 1,
   "fault": 23,
   "gate-slow": 16,
-  "integration": 163,
+  "integration": 165,
   "integration-docker": 94,
   "live": 6,
   "perf": 3,
   "replay": 16,
-  "unit": 3267
+  "unit": 3304
  },
  "components": [
   {
@@ -166,7 +166,7 @@
    "name": "Policy engine (dimensions, precedence, narrowing)",
    "status": "built (CPD-3: one generic resolver over policy-dimensions.json in Node and Python)",
    "files": 102,
-   "tests": 689,
+   "tests": 692,
    "filesByLevel": {
     "component": 1,
     "contract": 9,
@@ -179,7 +179,7 @@
     "contract": 81,
     "e2e-browser": 8,
     "integration": 1,
-    "unit": 597
+    "unit": 600
    },
    "markers": {},
    "unmatchedTestGlobs": [
@@ -487,7 +487,7 @@
      "path": "backend/python/tests/unit/control_plane/test_legacy_capabilities_driver.py",
      "level": "unit",
      "markers": [],
-     "tests": 12
+     "tests": 15
     },
     {
      "path": "backend/python/tests/unit/control_plane/test_live_layer_cache.py",
@@ -807,22 +807,22 @@
    "id": "CST",
    "name": "Control-plane stores and write transaction",
    "status": "partial (PolicyStore built, CPD-4: Mongo store, KV read-through, migration, Config* over the store in dual; installations, grants, bindings, approvals are CPD-7..9)",
-   "files": 36,
-   "tests": 194,
+   "files": 37,
+   "tests": 199,
    "filesByLevel": {
     "cohesion": 1,
     "contract": 7,
-    "integration": 11,
+    "integration": 12,
     "unit": 17
    },
    "testsByLevel": {
     "cohesion": 3,
     "contract": 64,
-    "integration": 33,
-    "unit": 94
+    "integration": 35,
+    "unit": 97
    },
    "markers": {
-    "integration": 2
+    "integration": 3
    },
    "unmatchedTestGlobs": [
     "backend/nodejs/apps/tests/modules/control-plane/support/cp-objects.ts",
@@ -1034,6 +1034,14 @@
      "tests": 1
     },
     {
+     "path": "backend/python/tests/integration/kv/test_kv_cross_language.py",
+     "level": "integration",
+     "markers": [
+      "integration"
+     ],
+     "tests": 2
+    },
+    {
      "path": "backend/python/tests/integration/kv/test_redis_kv_store_it.py",
      "level": "integration",
      "markers": [
@@ -1051,7 +1059,7 @@
      "path": "backend/python/tests/unit/control_plane/test_legacy_capabilities_driver.py",
      "level": "unit",
      "markers": [],
-     "tests": 12
+     "tests": 15
     }
    ]
   },
@@ -1520,7 +1528,7 @@
    "name": "Audit chain and config audit",
    "status": "built (journal audit chain; config.changed by CPD-1, proven per admin route on Mongo by QA-4)",
    "files": 28,
-   "tests": 167,
+   "tests": 168,
    "filesByLevel": {
     "cohesion": 1,
     "contract": 5,
@@ -1533,7 +1541,7 @@
     "contract": 33,
     "gate-slow": 1,
     "integration": 28,
-    "unit": 103
+    "unit": 104
    },
    "markers": {
     "docker": 1,
@@ -1678,7 +1686,7 @@
      "path": "backend/nodejs/apps/tests/modules/control-plane/config-writes-audited.test.ts",
      "level": "unit",
      "markers": [],
-     "tests": 4
+     "tests": 5
     },
     {
      "path": "backend/nodejs/apps/tests/modules/control-plane/support/config-audit-contract.ts",
@@ -2076,7 +2084,7 @@
    "name": "Chat routes and routing",
    "status": "built (one-request routing is LAT1/CPD-10, in flight)",
    "files": 59,
-   "tests": 840,
+   "tests": 843,
    "filesByLevel": {
     "component": 11,
     "contract": 4,
@@ -2093,7 +2101,7 @@
     "fault": 2,
     "integration": 23,
     "perf": 1,
-    "unit": 683
+    "unit": 686
    },
    "markers": {
     "integration": 1
@@ -2424,7 +2432,7 @@
      "path": "backend/nodejs/apps/tests/modules/enterprise_search/utils/stream-lifecycle.test.ts",
      "level": "unit",
      "markers": [],
-     "tests": 20
+     "tests": 23
     },
     {
      "path": "backend/nodejs/apps/tests/modules/enterprise_search/utils/utils.regeneration.test.ts",
@@ -2771,14 +2779,14 @@
    "id": "JRN",
    "name": "Journal, execution store, outbox and sweepers",
    "status": "built",
-   "files": 149,
-   "tests": 963,
+   "files": 150,
+   "tests": 967,
    "filesByLevel": {
     "cohesion": 3,
     "component": 1,
     "contract": 21,
     "fault": 1,
-    "integration": 43,
+    "integration": 44,
     "unit": 80
    },
    "testsByLevel": {
@@ -2786,7 +2794,7 @@
     "component": 17,
     "contract": 171,
     "fault": 1,
-    "integration": 191,
+    "integration": 195,
     "unit": 573
    },
    "markers": {
@@ -2940,7 +2948,7 @@
      "path": "backend/nodejs/apps/tests/modules/agent-harness/conversation-writer.pg.itest.ts",
      "level": "integration",
      "markers": [],
-     "tests": 11
+     "tests": 12
     },
     {
      "path": "backend/nodejs/apps/tests/modules/agent-harness/data-key-store.mongo.itest.ts",
@@ -3121,6 +3129,12 @@
      "level": "unit",
      "markers": [],
      "tests": 2
+    },
+    {
+     "path": "backend/nodejs/apps/tests/modules/agent-harness/jobs-unit-scope.pg.itest.ts",
+     "level": "integration",
+     "markers": [],
+     "tests": 3
     },
     {
      "path": "backend/nodejs/apps/tests/modules/agent-harness/journal-failover.rs3.itest.ts",
@@ -4423,7 +4437,7 @@
    "name": "Worker, claimer and loop kernel",
    "status": "built",
    "files": 256,
-   "tests": 1746,
+   "tests": 1747,
    "filesByLevel": {
     "cohesion": 1,
     "component": 2,
@@ -4441,7 +4455,7 @@
     "fault": 49,
     "gate-slow": 9,
     "integration": 21,
-    "replay": 73,
+    "replay": 74,
     "unit": 1272
    },
    "markers": {
@@ -4627,7 +4641,7 @@
      "markers": [
       "ga26"
      ],
-     "tests": 9
+     "tests": 10
     },
     {
      "path": "backend/python/tests/harness_replay/test_golden_traces.py",
@@ -7828,7 +7842,7 @@
    "name": "MCP hub and runners",
    "status": "built, flags off (MCP_HUB, MCP_STDIO_RUNNERS)",
    "files": 121,
-   "tests": 1998,
+   "tests": 2013,
    "filesByLevel": {
     "contract": 2,
     "integration-docker": 2,
@@ -7837,7 +7851,7 @@
    "testsByLevel": {
     "contract": 30,
     "integration-docker": 22,
-    "unit": 1946
+    "unit": 1961
    },
    "markers": {
     "docker": 2
@@ -8109,13 +8123,13 @@
      "path": "backend/python/tests/unit/agents/mcp/test_url_guard.py",
      "level": "unit",
      "markers": [],
-     "tests": 31
+     "tests": 43
     },
     {
      "path": "backend/python/tests/unit/agents/mcp/test_url_guard_httpx2.py",
      "level": "unit",
      "markers": [],
-     "tests": 23
+     "tests": 26
     },
     {
      "path": "backend/python/tests/unit/agents/mcp/test_wp88_connect_timeout.py",
@@ -9256,21 +9270,21 @@
    "id": "SKL",
    "name": "Skills",
    "status": "built (creator scoping by CPS, merged at a168c7d5c)",
-   "files": 38,
-   "tests": 470,
+   "files": 40,
+   "tests": 482,
    "filesByLevel": {
     "contract": 2,
     "gate-slow": 1,
     "integration": 1,
     "integration-docker": 5,
-    "unit": 29
+    "unit": 31
    },
    "testsByLevel": {
     "contract": 44,
     "gate-slow": 1,
     "integration": 5,
     "integration-docker": 19,
-    "unit": 401
+    "unit": 413
    },
    "markers": {
     "docker": 6,
@@ -9296,7 +9310,7 @@
      "path": "backend/nodejs/apps/tests/modules/skills/controller/skills.controller.test.ts",
      "level": "unit",
      "markers": [],
-     "tests": 44
+     "tests": 45
     },
     {
      "path": "backend/nodejs/apps/tests/modules/skills/routes/skills.routes.test.ts",
@@ -9346,7 +9360,7 @@
      "path": "backend/python/tests/unit/api/routes/test_slash1_shared_commands.py",
      "level": "unit",
      "markers": [],
-     "tests": 19
+     "tests": 22
     },
     {
      "path": "backend/python/tests/unit/harness/assembly/test_durable_skill_learning.py",
@@ -9499,6 +9513,18 @@
      "level": "unit",
      "markers": [],
      "tests": 9
+    },
+    {
+     "path": "frontend/app/(main)/workspace/skills/personal/__tests__/usage.test.ts",
+     "level": "unit",
+     "markers": [],
+     "tests": 4
+    },
+    {
+     "path": "frontend/app/(main)/workspace/skills/personal/components/__tests__/danger-zone.test.tsx",
+     "level": "unit",
+     "markers": [],
+     "tests": 4
     },
     {
      "path": "frontend/app/(main)/workspace/skills/personal/components/__tests__/markdown-editor.test.tsx",
@@ -15568,15 +15594,15 @@
    "id": "MAC",
    "name": "Model access routes and accounts",
    "status": "built",
-   "files": 63,
-   "tests": 488,
+   "files": 64,
+   "tests": 490,
    "filesByLevel": {
     "component": 4,
     "contract": 3,
     "e2e-browser": 1,
     "integration": 2,
     "integration-docker": 3,
-    "unit": 50
+    "unit": 51
    },
    "testsByLevel": {
     "component": 23,
@@ -15584,7 +15610,7 @@
     "e2e-browser": 1,
     "integration": 3,
     "integration-docker": 6,
-    "unit": 427
+    "unit": 429
    },
    "markers": {
     "docker": 3
@@ -15940,6 +15966,12 @@
      "tests": 4
     },
     {
+     "path": "frontend/app/(main)/workspace/ai-accounts/__tests__/engine-not-installed.test.tsx",
+     "level": "unit",
+     "markers": [],
+     "tests": 2
+    },
+    {
      "path": "frontend/app/(main)/workspace/ai-accounts/__tests__/engine-signin.test.tsx",
      "level": "unit",
      "markers": [],
@@ -15987,28 +16019,30 @@
    "id": "SCH",
    "name": "Scheduler",
    "status": "built, Labs off by default",
-   "files": 39,
-   "tests": 337,
+   "files": 49,
+   "tests": 461,
    "filesByLevel": {
     "component": 2,
     "contract": 1,
     "e2e-browser": 1,
     "integration": 5,
     "integration-docker": 1,
-    "unit": 29
+    "unit": 39
    },
    "testsByLevel": {
-    "component": 10,
-    "contract": 32,
+    "component": 11,
+    "contract": 42,
     "e2e-browser": 1,
     "integration": 16,
     "integration-docker": 1,
-    "unit": 277
+    "unit": 390
    },
    "markers": {
     "docker": 1
    },
-   "unmatchedTestGlobs": [],
+   "unmatchedTestGlobs": [
+    "backend/nodejs/apps/tests/modules/agent-harness/fixtures/sch03-call-tool-approval.json"
+   ],
    "unmatchedSourceGlobs": [],
    "testFiles": [
     {
@@ -16033,7 +16067,31 @@
      "path": "backend/nodejs/apps/tests/modules/agent-harness/sch01-schedule-from-chat.test.ts",
      "level": "unit",
      "markers": [],
-     "tests": 33
+     "tests": 39
+    },
+    {
+     "path": "backend/nodejs/apps/tests/modules/agent-harness/sch02-classic-conversations.test.ts",
+     "level": "unit",
+     "markers": [],
+     "tests": 4
+    },
+    {
+     "path": "backend/nodejs/apps/tests/modules/agent-harness/sch02-schedules-without-harness.test.ts",
+     "level": "unit",
+     "markers": [],
+     "tests": 27
+    },
+    {
+     "path": "backend/nodejs/apps/tests/modules/agent-harness/sch03-internal-route-limits.test.ts",
+     "level": "unit",
+     "markers": [],
+     "tests": 2
+    },
+    {
+     "path": "backend/nodejs/apps/tests/modules/agent-harness/sch03-managing-schedules.test.ts",
+     "level": "unit",
+     "markers": [],
+     "tests": 31
     },
     {
      "path": "backend/nodejs/apps/tests/modules/agent-harness/schedule-approvals.test.ts",
@@ -16087,7 +16145,7 @@
      "path": "backend/nodejs/apps/tests/modules/agent-harness/schedule-routes.http.test.ts",
      "level": "component",
      "markers": [],
-     "tests": 9
+     "tests": 10
     },
     {
      "path": "backend/nodejs/apps/tests/modules/agent-harness/schedule-service.test.ts",
@@ -16117,7 +16175,7 @@
      "path": "backend/nodejs/apps/tests/modules/agent-harness/scheduled-run-admission.test.ts",
      "level": "unit",
      "markers": [],
-     "tests": 1
+     "tests": 3
     },
     {
      "path": "backend/nodejs/apps/tests/modules/agent-harness/schedules.test.ts",
@@ -16129,7 +16187,7 @@
      "path": "backend/nodejs/apps/tests/modules/agent-harness/support/schedule-store-contract.ts",
      "level": "contract",
      "markers": [],
-     "tests": 32
+     "tests": 42
     },
     {
      "path": "backend/nodejs/apps/tests/modules/agent-harness/trigger-settings.test.ts",
@@ -16180,6 +16238,12 @@
      "tests": 2
     },
     {
+     "path": "backend/nodejs/apps/tests/modules/enterprise_search/scheduled-classic-turn.test.ts",
+     "level": "unit",
+     "markers": [],
+     "tests": 11
+    },
+    {
      "path": "backend/python/tests/unit/harness/engines/test_scheduled_durable.py",
      "level": "integration-docker",
      "markers": [
@@ -16192,6 +16256,12 @@
      "level": "unit",
      "markers": [],
      "tests": 31
+    },
+    {
+     "path": "backend/python/tests/unit/harness/test_sch03_call_tool_binding.py",
+     "level": "unit",
+     "markers": [],
+     "tests": 3
     },
     {
      "path": "backend/python/tests/unit/harness/test_tr03_trigger_context.py",
@@ -16216,6 +16286,30 @@
      "level": "unit",
      "markers": [],
      "tests": 6
+    },
+    {
+     "path": "frontend/app/(main)/workspace/schedules/__tests__/sch02-firing-runner.test.tsx",
+     "level": "unit",
+     "markers": [],
+     "tests": 3
+    },
+    {
+     "path": "frontend/app/(main)/workspace/schedules/__tests__/sch02-schedules-without-harness.test.tsx",
+     "level": "unit",
+     "markers": [],
+     "tests": 7
+    },
+    {
+     "path": "frontend/app/(main)/workspace/schedules/__tests__/sch03-schedule-chat-changes.test.tsx",
+     "level": "unit",
+     "markers": [],
+     "tests": 6
+    },
+    {
+     "path": "frontend/app/(main)/workspace/schedules/__tests__/sch03-schedule-drawer.test.tsx",
+     "level": "unit",
+     "markers": [],
+     "tests": 11
     },
     {
      "path": "frontend/app/(main)/workspace/schedules/__tests__/schedules-api.test.ts",
@@ -16699,19 +16793,19 @@
    "id": "LAB",
    "name": "Labs, flags and rollout",
    "status": "built",
-   "files": 36,
-   "tests": 342,
+   "files": 37,
+   "tests": 344,
    "filesByLevel": {
     "cohesion": 4,
     "e2e-browser": 1,
     "integration": 1,
-    "unit": 30
+    "unit": 31
    },
    "testsByLevel": {
     "cohesion": 53,
     "e2e-browser": 3,
     "integration": 5,
-    "unit": 281
+    "unit": 283
    },
    "markers": {
     "mcp_hub_default": 2
@@ -16913,13 +17007,19 @@
      "path": "frontend/app/(main)/workspace/labs/__tests__/labs-overrides.test.tsx",
      "level": "unit",
      "markers": [],
-     "tests": 6
+     "tests": 7
     },
     {
      "path": "frontend/app/(main)/workspace/labs/__tests__/page.test.tsx",
      "level": "unit",
      "markers": [],
      "tests": 2
+    },
+    {
+     "path": "frontend/app/(main)/workspace/labs/__tests__/sch02-labs-beta.test.ts",
+     "level": "unit",
+     "markers": [],
+     "tests": 1
     },
     {
      "path": "frontend/app/(main)/workspace/labs/__tests__/ux2-labs-conflict.test.tsx",
@@ -17009,7 +17109,7 @@
    "name": "Shared sessions",
    "status": "built (collaborator turns off by default)",
    "files": 33,
-   "tests": 271,
+   "tests": 272,
    "filesByLevel": {
     "contract": 3,
     "gate-slow": 1,
@@ -17019,7 +17119,7 @@
    "testsByLevel": {
     "contract": 54,
     "gate-slow": 1,
-    "integration": 52,
+    "integration": 53,
     "unit": 164
    },
    "markers": {
@@ -17045,7 +17145,7 @@
      "path": "backend/nodejs/apps/tests/modules/agent-harness/conversation-writer-shape.mongo.itest.ts",
      "level": "integration",
      "markers": [],
-     "tests": 4
+     "tests": 5
     },
     {
      "path": "backend/nodejs/apps/tests/modules/agent-harness/session-audience.test.ts",
@@ -17236,15 +17336,15 @@
    "id": "LEG",
    "name": "Legacy query path (today's loop)",
    "status": "built (reference and kill-switch target)",
-   "files": 796,
-   "tests": 17805,
+   "files": 808,
+   "tests": 18042,
    "filesByLevel": {
     "contract": 6,
     "integration": 3,
     "integration-docker": 1,
     "live": 6,
     "replay": 1,
-    "unit": 779
+    "unit": 791
    },
    "testsByLevel": {
     "contract": 88,
@@ -17252,7 +17352,7 @@
     "integration-docker": 19,
     "live": 39,
     "replay": 7,
-    "unit": 17635
+    "unit": 17872
    },
    "markers": {
     "ai_agents": 6,
@@ -17721,7 +17821,7 @@
      "path": "backend/python/tests/unit/agent_loop_lib/modules/providers/skills/test_manager.py",
      "level": "unit",
      "markers": [],
-     "tests": 69
+     "tests": 72
     },
     {
      "path": "backend/python/tests/unit/agent_loop_lib/modules/providers/skills/test_validator.py",
@@ -18338,7 +18438,7 @@
      "path": "backend/python/tests/unit/agent_loop_lib/tools/builtin/data/test_skills.py",
      "level": "unit",
      "markers": [],
-     "tests": 24
+     "tests": 25
     },
     {
      "path": "backend/python/tests/unit/agent_loop_lib/tools/builtin/planning/test_create_plan.py",
@@ -18572,7 +18672,7 @@
      "path": "backend/python/tests/unit/agent_loop_lib/transport/test_prompt_cache_policy.py",
      "level": "unit",
      "markers": [],
-     "tests": 26
+     "tests": 29
     },
     {
      "path": "backend/python/tests/unit/agents/actions/artifacts/test_artifacts.py",
@@ -19649,6 +19749,12 @@
      "tests": 6
     },
     {
+     "path": "backend/python/tests/unit/agents/adapter/test_builtin_seed_no_overwrite.py",
+     "level": "unit",
+     "markers": [],
+     "tests": 5
+    },
+    {
      "path": "backend/python/tests/unit/agents/adapter/test_builtin_skill_seeder.py",
      "level": "unit",
      "markers": [],
@@ -20147,10 +20253,28 @@
      "tests": 24
     },
     {
+     "path": "backend/python/tests/unit/agents/adapter/test_skill_usage_is_scoped.py",
+     "level": "unit",
+     "markers": [],
+     "tests": 13
+    },
+    {
+     "path": "backend/python/tests/unit/agents/adapter/test_skill_writes_are_bound.py",
+     "level": "unit",
+     "markers": [],
+     "tests": 2
+    },
+    {
      "path": "backend/python/tests/unit/agents/adapter/test_skills_graph_store.py",
      "level": "unit",
      "markers": [],
      "tests": 48
+    },
+    {
+     "path": "backend/python/tests/unit/agents/adapter/test_skills_no_overwrite.py",
+     "level": "unit",
+     "markers": [],
+     "tests": 46
     },
     {
      "path": "backend/python/tests/unit/agents/adapter/test_skills_sandbox_e2e.py",
@@ -20390,7 +20514,7 @@
      "path": "backend/python/tests/unit/agents/agent_loop/skills/test_manager_factory.py",
      "level": "unit",
      "markers": [],
-     "tests": 23
+     "tests": 25
     },
     {
      "path": "backend/python/tests/unit/agents/agent_loop/skills/test_qafix4_pptx_skill.py",
@@ -20541,6 +20665,24 @@
      "level": "unit",
      "markers": [],
      "tests": 8
+    },
+    {
+     "path": "backend/python/tests/unit/agents/agent_loop/test_sch02_schedules_without_harness.py",
+     "level": "unit",
+     "markers": [],
+     "tests": 25
+    },
+    {
+     "path": "backend/python/tests/unit/agents/agent_loop/test_sch03_managing_schedules.py",
+     "level": "unit",
+     "markers": [],
+     "tests": 28
+    },
+    {
+     "path": "backend/python/tests/unit/agents/agent_loop/test_sch03_schedules_on_demand.py",
+     "level": "unit",
+     "markers": [],
+     "tests": 16
     },
     {
      "path": "backend/python/tests/unit/agents/agent_loop/test_stop_interrupts_sandbox.py",
@@ -20852,13 +20994,13 @@
      "path": "backend/python/tests/unit/agents/mcp/test_url_guard.py",
      "level": "unit",
      "markers": [],
-     "tests": 31
+     "tests": 43
     },
     {
      "path": "backend/python/tests/unit/agents/mcp/test_url_guard_httpx2.py",
      "level": "unit",
      "markers": [],
-     "tests": 23
+     "tests": 26
     },
     {
      "path": "backend/python/tests/unit/agents/mcp/test_wp88_connect_timeout.py",
@@ -21077,6 +21219,12 @@
      "tests": 2
     },
     {
+     "path": "backend/python/tests/unit/api/middlewares/test_session_only.py",
+     "level": "unit",
+     "markers": [],
+     "tests": 25
+    },
+    {
      "path": "backend/python/tests/unit/api/middlewares/test_token_policy.py",
      "level": "unit",
      "markers": [],
@@ -21206,13 +21354,19 @@
      "path": "backend/python/tests/unit/api/routes/test_agent_route_access.py",
      "level": "unit",
      "markers": [],
-     "tests": 116
+     "tests": 118
     },
     {
      "path": "backend/python/tests/unit/api/routes/test_agent_service_account_knowledge.py",
      "level": "unit",
      "markers": [],
      "tests": 12
+    },
+    {
+     "path": "backend/python/tests/unit/api/routes/test_agent_skill_edges.py",
+     "level": "unit",
+     "markers": [],
+     "tests": 14
     },
     {
      "path": "backend/python/tests/unit/api/routes/test_agent_strict_scope.py",
@@ -21797,6 +21951,18 @@
      "tests": 11
     },
     {
+     "path": "backend/python/tests/unit/api/routes/test_skill_reads_use_the_visibility_rule.py",
+     "level": "unit",
+     "markers": [],
+     "tests": 10
+    },
+    {
+     "path": "backend/python/tests/unit/api/routes/test_skill_usage_visibility.py",
+     "level": "unit",
+     "markers": [],
+     "tests": 7
+    },
+    {
      "path": "backend/python/tests/unit/api/routes/test_skills.py",
      "level": "unit",
      "markers": [],
@@ -21815,10 +21981,16 @@
      "tests": 91
     },
     {
+     "path": "backend/python/tests/unit/api/routes/test_skills_no_overwrite.py",
+     "level": "unit",
+     "markers": [],
+     "tests": 17
+    },
+    {
      "path": "backend/python/tests/unit/api/routes/test_slash1_shared_commands.py",
      "level": "unit",
      "markers": [],
-     "tests": 19
+     "tests": 22
     },
     {
      "path": "backend/python/tests/unit/api/routes/test_speech.py",
@@ -22710,15 +22882,15 @@
    "id": "FEC",
    "name": "Frontend chat surfaces",
    "status": "built",
-   "files": 506,
-   "tests": 4565,
+   "files": 511,
+   "tests": 4626,
    "filesByLevel": {
     "e2e-browser": 77,
-    "unit": 429
+    "unit": 434
    },
    "testsByLevel": {
     "e2e-browser": 327,
-    "unit": 4238
+    "unit": 4299
    },
    "markers": {},
    "unmatchedTestGlobs": [],
@@ -24099,6 +24271,24 @@
      "tests": 6
     },
     {
+     "path": "frontend/app/(main)/chat/components/message-area/__tests__/sch02-classic-schedule-card.test.tsx",
+     "level": "unit",
+     "markers": [],
+     "tests": 9
+    },
+    {
+     "path": "frontend/app/(main)/chat/components/message-area/__tests__/sch02-schedule-origin.test.tsx",
+     "level": "unit",
+     "markers": [],
+     "tests": 4
+    },
+    {
+     "path": "frontend/app/(main)/chat/components/message-area/__tests__/sch03-schedule-change-cards.test.tsx",
+     "level": "unit",
+     "markers": [],
+     "tests": 18
+    },
+    {
      "path": "frontend/app/(main)/chat/components/message-area/__tests__/search-degraded-note.test.tsx",
      "level": "unit",
      "markers": [],
@@ -24765,10 +24955,16 @@
      "tests": 16
     },
     {
+     "path": "frontend/lib/api/__tests__/session-check-retry.test.ts",
+     "level": "unit",
+     "markers": [],
+     "tests": 6
+    },
+    {
      "path": "frontend/lib/api/__tests__/session-end.test.ts",
      "level": "unit",
      "markers": [],
-     "tests": 23
+     "tests": 24
     },
     {
      "path": "frontend/lib/api/__tests__/session-store-resets.test.ts",
@@ -24828,7 +25024,7 @@
      "path": "frontend/lib/auth/__tests__/session-rotation.test.ts",
      "level": "unit",
      "markers": [],
-     "tests": 4
+     "tests": 7
     },
     {
      "path": "frontend/lib/commands/__tests__/render.test.ts",
@@ -24948,7 +25144,7 @@
      "path": "frontend/lib/harness-jobs/__tests__/inbox.test.ts",
      "level": "unit",
      "markers": [],
-     "tests": 21
+     "tests": 22
     },
     {
      "path": "frontend/lib/harness-jobs/__tests__/jobs.test.ts",
@@ -25129,6 +25325,12 @@
      "level": "unit",
      "markers": [],
      "tests": 16
+    },
+    {
+     "path": "frontend/lib/socket/__tests__/notification-socket.session-check.test.ts",
+     "level": "unit",
+     "markers": [],
+     "tests": 19
     },
     {
      "path": "frontend/lib/socket/__tests__/notification-socket.test.ts",
@@ -25766,15 +25968,15 @@
    "id": "FEA",
    "name": "Frontend workspace and admin surfaces",
    "status": "built",
-   "files": 298,
-   "tests": 2167,
+   "files": 312,
+   "tests": 2262,
    "filesByLevel": {
     "e2e-browser": 15,
-    "unit": 283
+    "unit": 297
    },
    "testsByLevel": {
     "e2e-browser": 53,
-    "unit": 2114
+    "unit": 2209
    },
    "markers": {},
    "unmatchedTestGlobs": [],
@@ -26081,7 +26283,7 @@
      "path": "frontend/app/(main)/agents/agent-builder/components/__tests__/ux07-agent-runtime.test.tsx",
      "level": "unit",
      "markers": [],
-     "tests": 8
+     "tests": 10
     },
     {
      "path": "frontend/app/(main)/agents/agent-builder/hooks/__tests__/use-node-templates.test.ts",
@@ -26208,6 +26410,12 @@
      "level": "unit",
      "markers": [],
      "tests": 4
+    },
+    {
+     "path": "frontend/app/(main)/workspace/ai-accounts/__tests__/engine-not-installed.test.tsx",
+     "level": "unit",
+     "markers": [],
+     "tests": 2
     },
     {
      "path": "frontend/app/(main)/workspace/ai-accounts/__tests__/engine-signin.test.tsx",
@@ -26486,6 +26694,12 @@
      "tests": 22
     },
     {
+     "path": "frontend/app/(main)/workspace/connectors/__tests__/sync-toggle-pending-store.test.ts",
+     "level": "unit",
+     "markers": [],
+     "tests": 4
+    },
+    {
      "path": "frontend/app/(main)/workspace/connectors/components/__tests__/authorize-tab-oauth.test.tsx",
      "level": "unit",
      "markers": [],
@@ -26495,7 +26709,7 @@
      "path": "frontend/app/(main)/workspace/connectors/components/__tests__/config-success-dialog.test.tsx",
      "level": "unit",
      "markers": [],
-     "tests": 5
+     "tests": 8
     },
     {
      "path": "frontend/app/(main)/workspace/connectors/components/__tests__/connector-catalog-layout.test.tsx",
@@ -26507,7 +26721,7 @@
      "path": "frontend/app/(main)/workspace/connectors/components/__tests__/connector-details-layout.test.tsx",
      "level": "unit",
      "markers": [],
-     "tests": 22
+     "tests": 23
     },
     {
      "path": "frontend/app/(main)/workspace/connectors/components/__tests__/connector-panel.test.tsx",
@@ -26520,6 +26734,12 @@
      "level": "unit",
      "markers": [],
      "tests": 14
+    },
+    {
+     "path": "frontend/app/(main)/workspace/connectors/components/__tests__/instance-card-sync-pending.test.tsx",
+     "level": "unit",
+     "markers": [],
+     "tests": 5
     },
     {
      "path": "frontend/app/(main)/workspace/connectors/components/__tests__/instance-card-user.test.tsx",
@@ -26705,13 +26925,13 @@
      "path": "frontend/app/(main)/workspace/connectors/personal/__tests__/connectors-personal-page.test.tsx",
      "level": "unit",
      "markers": [],
-     "tests": 13
+     "tests": 14
     },
     {
      "path": "frontend/app/(main)/workspace/connectors/team/__tests__/connectors-team-page.test.tsx",
      "level": "unit",
      "markers": [],
-     "tests": 31
+     "tests": 34
     },
     {
      "path": "frontend/app/(main)/workspace/connectors/utils/__tests__/admin-access-helpers.test.ts",
@@ -26741,7 +26961,7 @@
      "path": "frontend/app/(main)/workspace/connectors/utils/__tests__/connector-sync-actions.test.ts",
      "level": "unit",
      "markers": [],
-     "tests": 16
+     "tests": 19
     },
     {
      "path": "frontend/app/(main)/workspace/connectors/utils/__tests__/folder-path-rules.test.ts",
@@ -26790,6 +27010,12 @@
      "level": "unit",
      "markers": [],
      "tests": 8
+    },
+    {
+     "path": "frontend/app/(main)/workspace/connectors/utils/__tests__/sync-toggle-feedback.test.ts",
+     "level": "unit",
+     "markers": [],
+     "tests": 10
     },
     {
      "path": "frontend/app/(main)/workspace/connectors/utils/__tests__/url-field.test.ts",
@@ -26945,13 +27171,19 @@
      "path": "frontend/app/(main)/workspace/labs/__tests__/labs-overrides.test.tsx",
      "level": "unit",
      "markers": [],
-     "tests": 6
+     "tests": 7
     },
     {
      "path": "frontend/app/(main)/workspace/labs/__tests__/page.test.tsx",
      "level": "unit",
      "markers": [],
      "tests": 2
+    },
+    {
+     "path": "frontend/app/(main)/workspace/labs/__tests__/sch02-labs-beta.test.ts",
+     "level": "unit",
+     "markers": [],
+     "tests": 1
     },
     {
      "path": "frontend/app/(main)/workspace/labs/__tests__/ux2-labs-conflict.test.tsx",
@@ -27170,6 +27402,30 @@
      "tests": 6
     },
     {
+     "path": "frontend/app/(main)/workspace/schedules/__tests__/sch02-firing-runner.test.tsx",
+     "level": "unit",
+     "markers": [],
+     "tests": 3
+    },
+    {
+     "path": "frontend/app/(main)/workspace/schedules/__tests__/sch02-schedules-without-harness.test.tsx",
+     "level": "unit",
+     "markers": [],
+     "tests": 7
+    },
+    {
+     "path": "frontend/app/(main)/workspace/schedules/__tests__/sch03-schedule-chat-changes.test.tsx",
+     "level": "unit",
+     "markers": [],
+     "tests": 6
+    },
+    {
+     "path": "frontend/app/(main)/workspace/schedules/__tests__/sch03-schedule-drawer.test.tsx",
+     "level": "unit",
+     "markers": [],
+     "tests": 11
+    },
+    {
      "path": "frontend/app/(main)/workspace/schedules/__tests__/schedules-api.test.ts",
      "level": "unit",
      "markers": [],
@@ -27254,6 +27510,12 @@
      "tests": 3
     },
     {
+     "path": "frontend/app/(main)/workspace/sidebar/__tests__/settings-scope.test.ts",
+     "level": "unit",
+     "markers": [],
+     "tests": 4
+    },
+    {
      "path": "frontend/app/(main)/workspace/sidebar/__tests__/sidebar-ai-accounts-visibility.test.tsx",
      "level": "unit",
      "markers": [],
@@ -27272,13 +27534,25 @@
      "tests": 1
     },
     {
+     "path": "frontend/app/(main)/workspace/sidebar/__tests__/sidebar-complete.test.tsx",
+     "level": "unit",
+     "markers": [],
+     "tests": 8
+    },
+    {
      "path": "frontend/app/(main)/workspace/sidebar/__tests__/sidebar-enterprise-items.test.tsx",
      "level": "unit",
      "markers": [],
-     "tests": 6
+     "tests": 10
     },
     {
      "path": "frontend/app/(main)/workspace/sidebar/__tests__/sidebar-harness-beta.test.tsx",
+     "level": "unit",
+     "markers": [],
+     "tests": 3
+    },
+    {
+     "path": "frontend/app/(main)/workspace/sidebar/__tests__/sidebar-nav-extras-scope.test.tsx",
      "level": "unit",
      "markers": [],
      "tests": 3
@@ -27317,7 +27591,7 @@
      "path": "frontend/app/(main)/workspace/sidebar/__tests__/workspace-nav-merge.test.ts",
      "level": "unit",
      "markers": [],
-     "tests": 5
+     "tests": 10
     },
     {
      "path": "frontend/app/(main)/workspace/sidebar/__tests__/workspace-page-links.test.tsx",
@@ -27342,6 +27616,18 @@
      "level": "unit",
      "markers": [],
      "tests": 9
+    },
+    {
+     "path": "frontend/app/(main)/workspace/skills/personal/__tests__/usage.test.ts",
+     "level": "unit",
+     "markers": [],
+     "tests": 4
+    },
+    {
+     "path": "frontend/app/(main)/workspace/skills/personal/components/__tests__/danger-zone.test.tsx",
+     "level": "unit",
+     "markers": [],
+     "tests": 4
     },
     {
      "path": "frontend/app/(main)/workspace/skills/personal/components/__tests__/markdown-editor.test.tsx",
@@ -29036,12 +29322,12 @@
    "name": "Job and Inbox view models and data layer for the classic UI",
    "status": "moved from the set-aside new interface (UI-ASIDE, 2026-11-10); classic screens next",
    "files": 17,
-   "tests": 153,
+   "tests": 154,
    "filesByLevel": {
     "unit": 17
    },
    "testsByLevel": {
-    "unit": 153
+    "unit": 154
    },
    "markers": {},
    "unmatchedTestGlobs": [],
@@ -29117,7 +29403,7 @@
      "path": "frontend/lib/harness-jobs/__tests__/inbox.test.ts",
      "level": "unit",
      "markers": [],
-     "tests": 21
+     "tests": 22
     },
     {
      "path": "frontend/lib/harness-jobs/__tests__/jobs.test.ts",

@@ -35,6 +35,7 @@ import {
   rootRunDocument,
   rootRunRequirements,
   sessionJournalFeatures,
+  durableSessionOrigin,
   durableSessionTitle,
 } from '../../../../modules/agent-harness/domain/admission';
 import { MongoHeadRevisions } from '../../../../modules/control-plane';
@@ -320,6 +321,9 @@ export class MongoRunAdmissionStore
               title: createdSession.title,
               model: command.input.model,
               now,
+              ...(command.trigger !== undefined
+                ? { origin: durableSessionOrigin(command) }
+                : {}),
             },
             mongoTx(mongoSession),
           );

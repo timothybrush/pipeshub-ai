@@ -1,3 +1,4 @@
+import type { ScheduleSessionOrigin } from '../domain/schedules';
 import type { TurnRole } from '../domain/session-roles';
 import { RunInputSnapshot } from '../domain/execution';
 import type { AccountedConversation } from '../domain/session-import';
@@ -28,6 +29,11 @@ export interface NewDurableSession extends SessionExecutionScope {
   title: string;
   model: RunInputSnapshot['model'];
   now: number;
+  /**
+   * The schedule whose firing opens it (ADR-SCH-02 D3): kept as the conversation's `metadata.origin`, as a classic
+   * firing's is, so the chat shows which schedule started it. Absent for a person's own chat.
+   */
+  origin?: ScheduleSessionOrigin;
 }
 
 /**

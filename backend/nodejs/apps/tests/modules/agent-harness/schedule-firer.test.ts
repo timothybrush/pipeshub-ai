@@ -117,6 +117,7 @@ describe('P8a schedule firer (SF)', () => {
         firingId: firing!.id,
         slotKey: 'c:2026-07-06T07:00:00.000Z',
         maxCostUsd: 0.5,
+        scheduleName: schedule.name,
       },
     });
     expect(firing).to.deep.include({

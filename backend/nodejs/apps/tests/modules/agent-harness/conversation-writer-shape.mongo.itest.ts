@@ -14,6 +14,8 @@ import { expect } from 'chai';
 import mongoose, { ClientSession, Types } from 'mongoose';
 import type { CommandStartedEvent } from 'mongodb';
 import { ChatSession } from '../../../src/modules/enterprise_search/schema/chat.session.schema';
+import { getConversationRepository } from '../../../src/libs/repositories/conversation';
+import { scheduledConversationOrigin } from '../../../src/modules/agent-harness/transport/scheduled-turn-mark';
 import { ChatSessionMessage } from '../../../src/modules/enterprise_search/schema/chat.session.message.schema';
 import Citation from '../../../src/modules/enterprise_search/schema/citation.schema';
 import { HarnessChatSessionRepository } from '../../../src/libs/repositories/agent-harness/chat-session-repository/mongo';
@@ -288,6 +290,22 @@ describe('PERFE2: the lean conversation writer stores what the legacy writer sto
       expect(ledger.diverged, 'the harness wrote every message: nothing to re-import').to.equal(undefined);
     });
   }
+
+  it('ADR-SCH-02 D3: a scheduled run\'s conversation records its schedule, read back as the chat\'s header reads it', async () => {
+    const sessionId = new Types.ObjectId().toString();
+    const origin = { kind: 'schedule' as const, scheduleId: 'sch-1', firingId: 'fir-1', scheduleName: 'Morning joke' };
+    await inMongoTransaction((tx) =>
+      new HarnessChatSessionRepository().createDurableSession(
+        { orgId: ORG, actorId: OWNER, sessionId, title: 'Morning joke', model: MODEL as never, now: 1, origin },
+        tx,
+      ),
+    );
+    const stored = await getConversationRepository().findById(sessionId);
+    expect(scheduledConversationOrigin(stored?.metadata as never)).to.deep.equal(origin);
+    // A person's own chat records none.
+    const own = await newSession();
+    expect(scheduledConversationOrigin((await getConversationRepository().findById(own))?.metadata as never)).to.equal(null);
+  });
 
   it('PERFE2-7: the next import reads the history the ledger accounts for', async () => {
     const sessionId = await conversation(leanWrite, true);

@@ -39,7 +39,7 @@ async function fire(w: ScheduledWorld, maxCostUsd?: number) {
 describe('P8a budgets per firing (BG)', () => {
   it('BG-1: the fired run pins runKind scheduled, via trigger and the firing budget; run.admitted says scheduled', async () => {
     const w = scheduledWorld();
-    const { firing, run, claimed } = await fire(w, 0.5);
+    const { schedule, firing, run, claimed } = await fire(w, 0.5);
     expect(run.actorId).to.equal(ALICE);
     const spec = claimed.pinned!.spec;
     expect(spec.runKind).to.equal('scheduled');
@@ -52,6 +52,8 @@ describe('P8a budgets per firing (BG)', () => {
       firingId: firing.id,
       slotKey: firing.slotKey,
       maxCostUsd: 0.5,
+      // The conversation the run opens is titled with it and shows it as its schedule header (ADR-SCH-02 D3).
+      scheduleName: schedule.name,
     });
     const admitted = (await w.executions.journal.readStream(ORG, run.sessionId, 0, 10)).find(
       (e) => e.type === 'run.admitted',
