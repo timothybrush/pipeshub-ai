@@ -77,6 +77,10 @@ describe('McpServerIcon', () => {
     expect(logo(<McpServerIcon typeId="linear" name="Team tracker" />)).toBe('linear icon');
   });
 
+  it.each(['Clay', 'Prospecting workspace'])("shows Clay's catalog logo for %s", (name) => {
+    expect(logoPath(<McpServerIcon typeId="clay" name={name} />)).toBe('/icons/connectors/clay.png');
+  });
+
   it('shows the logo of the service a custom server is named after', () => {
     expect(logo(<McpServerIcon typeId={null} name="Notion" />)).toBe('notion icon');
   });

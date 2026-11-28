@@ -119,6 +119,7 @@ export type ConnectorType =
   | 'instantly'
   | 'apollo'
   | 'zapmail'
+  | 'clay'
   // Generic / Fallback
   | 'web'
   | 'api'
@@ -242,6 +243,7 @@ export const CONNECTOR_ICONS: Record<ConnectorType, { svg: string | null; fallba
   'instantly': { svg: svg('instantly'), fallback: 'mail' },
   'apollo': { svg: svg('apollo'), fallback: 'search' },
   'zapmail': { svg: svg('zapmail'), fallback: 'mail', needDarkModeInvert: true },
+  'clay': { svg: `${CONNECTOR_ICONS_BASE_PATH}/clay.png`, fallback: 'hub' },
   // Generic / Fallback
   'web': { svg: svg('web'), fallback: 'language' },
   // API toolsets (admin-uploaded OpenAPI specs)

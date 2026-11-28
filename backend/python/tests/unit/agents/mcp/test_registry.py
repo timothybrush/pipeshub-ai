@@ -110,6 +110,7 @@ class TestMCPRegistry:
         assert "instantly" in type_ids
         assert "apollo" in type_ids
         assert "zapmail" in type_ids
+        assert "clay" in type_ids
 
     def test_apollo_catalog_entry(self) -> None:
         registry = MCPRegistry()
@@ -421,9 +422,14 @@ class TestMCPRegistry:
                 "https://fathom.video/mcp/oauth/authorize", "https://api.fathom.ai/mcp/oauth/token",
                 "/icons/connectors/fathom.svg", "https://developers.fathom.ai/mcp-docs",
             ),
+            (
+                "clay", "Clay", "https://api.clay.com/v3/mcp",
+                "https://app.clay.com/oauth/authorize", "https://api.clay.com/oauth/token",
+                "/icons/connectors/clay.png", "https://university.clay.com/docs/connect-to-clay-mcp",
+            ),
         ],
     )
-    def test_meeting_and_support_catalog_entries(
+    def test_hosted_oauth_catalog_entries(
         self, type_id: str, display_name: str, url: str, authorization_url: str,
         token_url: str, icon: str, docs: str,
     ) -> None:
@@ -447,7 +453,7 @@ class TestMCPRegistry:
         assert template.icon == icon
         assert template.documentation_url == docs
 
-    @pytest.mark.parametrize("type_id", ["intercom", "granola", "fireflies", "fathom", "instantly"])
+    @pytest.mark.parametrize("type_id", ["intercom", "granola", "fireflies", "fathom", "instantly", "clay"])
     def test_new_catalog_entry_logo_file_exists(self, type_id: str) -> None:
         """The template's `icon` path must point at a file the frontend actually serves."""
         registry = MCPRegistry()

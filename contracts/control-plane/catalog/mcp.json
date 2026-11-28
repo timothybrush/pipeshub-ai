@@ -387,6 +387,77 @@
     },
     {
       "schemaVersion": 1,
+      "ref": "mcp:pipeshub/clay@c.13622e4be2b9",
+      "kind": "mcp",
+      "publisher": "pipeshub",
+      "name": "clay",
+      "version": "c.13622e4be2b9",
+      "orgId": null,
+      "provenance": "release",
+      "source": {
+        "type": "release"
+      },
+      "display": {
+        "name": "Clay",
+        "description": "Find and enrich companies and contacts, and run Clay workspace functions.",
+        "icon": "/icons/connectors/clay.png",
+        "categories": [
+          "prospecting",
+          "enrichment",
+          "sales"
+        ],
+        "hidden": false
+      },
+      "riskClass": "write-external",
+      "configSchema": {
+        "transport": "streamable_http",
+        "defaultAuthMode": "oauth",
+        "supportedAuthModes": [
+          "oauth"
+        ],
+        "command": null,
+        "args": [],
+        "requiredEnv": [],
+        "optionalEnv": [],
+        "defaultUrl": "https://api.clay.com/v3/mcp",
+        "urlEditable": false,
+        "requireOauthClient": false,
+        "authorizationUrl": "https://app.clay.com/oauth/authorize",
+        "tokenUrl": "https://api.clay.com/oauth/token",
+        "defaultScopes": [],
+        "authorizationParams": {},
+        "clientSecretPrefix": null,
+        "supportsDcr": true,
+        "documentationUrl": "https://university.clay.com/docs/connect-to-clay-mcp",
+        "authHint": null,
+        "category": "sales",
+        "capabilities": [
+          "Enrich company and contact data",
+          "List workspace enrichment functions"
+        ],
+        "readOnly": false,
+        "replacedBy": null
+      },
+      "credentialRequirements": [
+        {
+          "mode": "oauth",
+          "owners": [
+            "agent",
+            "user"
+          ],
+          "provider": "clay"
+        }
+      ],
+      "descriptors": {
+        "kind": "tool",
+        "items": []
+      },
+      "descriptorSetDigest": "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "deprecated": false,
+      "createdAt": 0
+    },
+    {
+      "schemaVersion": 1,
       "ref": "mcp:pipeshub/clickup@c.0d2a28f4b591",
       "kind": "mcp",
       "publisher": "pipeshub",

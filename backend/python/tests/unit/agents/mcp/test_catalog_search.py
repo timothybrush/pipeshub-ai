@@ -48,6 +48,7 @@ class TestRanking:
             ("support tickets", "intercom", "Manage support tickets"),
             ("sign a contract", "docusign", "Send a document for signature"),
             ("review pull requests", "github", "Review pull requests"),
+            ("enrich company", "clay", "Enrich company and contact data"),
         ],
     )
     def test_a_job_finds_the_server_that_does_it_and_says_why(
@@ -83,6 +84,7 @@ class TestRanking:
     def test_a_category_narrows_with_or_without_a_search(self, catalog: list[MCPServerTemplate]) -> None:
         meetings = rank_templates(catalog, None, MCPCategory.MEETINGS.value)
         assert meetings and all(m.template.category is MCPCategory.MEETINGS for m in meetings)
+        assert "clay" in _ids(rank_templates(catalog, None, MCPCategory.SALES.value))
         assert _ids(rank_templates(catalog, "issues", MCPCategory.DEVELOPER.value))
         assert all(
             m.template.category is MCPCategory.DEVELOPER
