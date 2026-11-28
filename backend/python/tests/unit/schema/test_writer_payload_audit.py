@@ -686,7 +686,7 @@ _AUDITED_CYPHER_WRITERS = frozenset({
     'claim_push_record', 'update_indexing_status_for_record_ids', 'update_record_fields_for_ids', '_promote_queued_copies', 'write_attempt_start', 'compare_and_set_indexing_status', 'compare_and_set_record_fields',
     'create_edges_if_absent', 'create_node_if_absent', 'create_organization_if_absent', 'create_taxonomy_node_if_absent',
     'delete_node_if_match', 'delete_records_recursive', 'drop_redundant_group_edges', 'ensure_app_membership', 'ensure_nodes',
-    # hard_delete_agent: only the matchLock flag, set and removed in the same statement to lock the MCP servers and tools it
+    # hard_delete_agent: only the matchLock flag, set and removed within one statement to lock the toolsets, MCP servers and tools it
     # may delete; no caller payload, nothing kept (the statement otherwise deletes)
     'hard_delete_agent',
     # reap_stale_external_app_relations: sets each flagged user-app edge's isExternalUser to the value it already holds (true), only to take

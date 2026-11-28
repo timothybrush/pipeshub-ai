@@ -14846,15 +14846,15 @@ class TestHardDeleteAgent:
             ["agentKnowledge/k1", "agentKnowledge/k2"],
             # deleted_knowledge from step 2
             [{"_key": "k1"}],
-            # toolset_ids from step 3
+            # the agent's toolset links, removed
             ["agentToolsets/ts1"],
-            # tool_ids from step 4
+            # re-check: no agent links ts1 any more
+            ["agentToolsets/ts1"],
+            # ts1's tool links, removed
             ["agentTools/t1", "agentTools/t2"],
-            # deleted_tools from step 5
+            # t1, held by no other toolset (t2 is)
             [{"_key": "t1"}],
-            # deleted_toolset_edges from step 6
-            [{"_key": "e1"}],
-            # deleted_toolsets from step 7
+            # ts1
             [{"_key": "ts1"}],
             # agent -> MCP server edges removed (none attached)
             [],
@@ -14877,8 +14877,7 @@ class TestHardDeleteAgent:
         """Test hard delete with no knowledge and no toolsets."""
         connected_provider.execute_query = AsyncMock(side_effect=[
             [],    # no knowledge_ids
-            [],    # no toolset_ids
-            [],    # no toolset edges deleted
+            [],    # no agent -> toolset edges
             [],    # no agent -> MCP server edges (none removed, no server re-checked)
             [],    # no permissions
             [{"_key": "a1"}],  # agent deleted
@@ -14897,8 +14896,7 @@ class TestHardDeleteAgent:
         connected_provider.execute_query = AsyncMock(side_effect=[
             ["agentKnowledge/k1"],   # knowledge_ids
             [],                       # no deleted_knowledge (still referenced)
-            [],                       # no toolsets
-            [],                       # no toolset edges
+            [],                       # no agent -> toolset edges
             [],                       # no agent -> MCP server edges (none removed, no server re-checked)
             [],                       # no permissions
             [{"_key": "a1"}],         # agent deleted
@@ -14910,14 +14908,14 @@ class TestHardDeleteAgent:
 
     @pytest.mark.asyncio
     async def test_toolsets_with_no_tool_orphans(self, connected_provider):
-        """Test with toolsets that have tools still referenced by others."""
+        """An orphaned toolset whose tool another toolset still holds: the toolset goes, the tool stays."""
         connected_provider.execute_query = AsyncMock(side_effect=[
             [],                      # no knowledge
-            ["agentToolsets/ts1"],    # toolset_ids
-            ["agentTools/t1"],       # tool_ids
-            [],                      # no deleted_tools (still referenced)
-            [{"_key": "e1"}],        # toolset edges deleted
-            [],                      # no deleted_toolsets (still referenced)
+            ["agentToolsets/ts1"],   # the agent's toolset links, removed
+            ["agentToolsets/ts1"],   # re-check: no agent links ts1 any more
+            ["agentTools/t1"],       # ts1's tool links, removed
+            [],                      # t1 still held by another toolset
+            [{"_key": "ts1"}],       # ts1
             [],                      # no agent -> MCP server edges (none removed, no server re-checked)
             [],                      # no permissions
             [{"_key": "a1"}],        # agent deleted
@@ -14926,8 +14924,26 @@ class TestHardDeleteAgent:
         result = await connected_provider.hard_delete_agent("a1")
         assert result["agents_deleted"] == 1
         assert result["tools_deleted"] == 0
-        assert result["toolsets_deleted"] == 0
+        assert result["toolsets_deleted"] == 1
         assert result["mcp_servers_deleted"] == 0
+
+    @pytest.mark.asyncio
+    async def test_a_toolset_another_agent_links_keeps_its_tools(self, connected_provider) -> None:
+        """The agent's link goes; a toolset another agent still links keeps its tool links and tools."""
+        connected_provider.execute_query = AsyncMock(side_effect=[
+            [],                      # no knowledge
+            ["agentToolsets/ts1"],   # the agent's toolset links, removed
+            [],                      # re-check: another agent still links ts1
+            [],                      # no agent -> MCP server edges
+            [],                      # no permissions
+            [{"_key": "a1"}],        # agent deleted
+        ])
+
+        result = await connected_provider.hard_delete_agent("a1")
+
+        queries = [c.args[0] for c in connected_provider.execute_query.await_args_list]
+        assert not any("REMOVE edge IN toolsetHasTool" in q for q in queries)
+        assert (result["toolsets_deleted"], result["tools_deleted"], result["edges_deleted"]) == (0, 0, 1)
 
     @pytest.mark.asyncio
     async def test_a_server_is_rechecked_after_the_agents_own_links_are_gone(self, connected_provider) -> None:
@@ -14935,8 +14951,7 @@ class TestHardDeleteAgent:
         concurrently (its link already removed) goes with this delete, tools and all."""
         connected_provider.execute_query = AsyncMock(side_effect=[
             [],                                  # no knowledge
-            [],                                  # no toolsets
-            [],                                  # no toolset edges
+            [],                                  # no agent -> toolset edges
             ["agentMcpServers/s1"],              # the agent's server links, removed
             ["agentMcpServers/s1"],              # re-check: no agent is attached to s1 any more
             ["agentTools/t1"],                   # s1's tool links, removed
@@ -14950,8 +14965,8 @@ class TestHardDeleteAgent:
         result = await connected_provider.hard_delete_agent("a1")
 
         queries = [c.args[0] for c in connected_provider.execute_query.await_args_list]
-        assert "REMOVE edge IN agentHasMcpServer" in queries[3] and "RETURN OLD._to" in queries[3]
-        assert connected_provider.execute_query.await_args_list[4].kwargs["bind_vars"] == {"server_ids": ["agentMcpServers/s1"]}
+        assert "REMOVE edge IN agentHasMcpServer" in queries[2] and "RETURN OLD._to" in queries[2]
+        assert connected_provider.execute_query.await_args_list[3].kwargs["bind_vars"] == {"server_ids": ["agentMcpServers/s1"]}
         assert (result["mcp_servers_deleted"], result["tools_deleted"], result["edges_deleted"], result["agents_deleted"]) == (1, 1, 2, 1)
 
     @pytest.mark.asyncio
@@ -14964,12 +14979,12 @@ class TestHardDeleteAgent:
         connected_provider.http_client.begin_transaction = AsyncMock(side_effect=["tx1", "tx2"])
         connected_provider.execute_query = AsyncMock(side_effect=[
             [],                                  # no knowledge
-            [],                                  # no toolsets
-            [],                                  # no toolset edges
+            [],                                  # tx1: no agent -> toolset edges
             ["agentMcpServers/s1"],              # tx1: the agent's server links, removed
             ["agentMcpServers/s1"],              # tx1: s1 is orphaned
             conflict,                            # tx1: another writer holds s1's tool links
-            ["agentMcpServers/s1"],              # tx2 (tx1 rolled back): the links, removed again
+            [],                                  # tx2 (tx1 rolled back): no agent -> toolset edges
+            ["agentMcpServers/s1"],              # tx2: the links, removed again
             ["agentMcpServers/s1"],              # tx2: s1 is orphaned
             ["agentTools/t1"],                   # tx2: s1's tool links
             [{"_key": "t1"}],                    # tx2: t1, held by no other server
@@ -14985,8 +15000,8 @@ class TestHardDeleteAgent:
         connected_provider.http_client.abort_transaction.assert_awaited_once_with("tx1")
         connected_provider.http_client.commit_transaction.assert_awaited_once_with("tx2")
         begin = connected_provider.http_client.begin_transaction.await_args
-        assert begin.kwargs["exclusive"] == [CollectionNames.AGENT_HAS_MCP_SERVER.value]
-        assert [c.kwargs["transaction"] for c in connected_provider.execute_query.await_args_list[3:11]] == ["tx1"] * 3 + ["tx2"] * 5
+        assert begin.kwargs["exclusive"] == [CollectionNames.AGENT_HAS_TOOLSET.value, CollectionNames.AGENT_HAS_MCP_SERVER.value]
+        assert [c.kwargs["transaction"] for c in connected_provider.execute_query.await_args_list[1:11]] == ["tx1"] * 4 + ["tx2"] * 6
 
     @pytest.mark.asyncio
     async def test_a_lock_timeout_taking_the_mcp_transaction_is_run_again(self, connected_provider) -> None:
@@ -14997,7 +15012,8 @@ class TestHardDeleteAgent:
         timeout = ArangoQueryError("Begin transaction failed", 409, '{"code":409,"error":true,"errorMessage":"timeout waiting to lock","errorNum":18}')
         connected_provider.http_client.begin_transaction = AsyncMock(side_effect=[timeout, "tx2"])
         connected_provider.execute_query = AsyncMock(side_effect=[
-            [], [], [],                          # no knowledge, toolsets, toolset edges
+            [],                                  # no knowledge
+            [],                                  # tx2: the agent has no toolset links
             [],                                  # tx2: the agent has no server links
             [],                                  # no permissions
             [{"_key": "a1"}],                    # agent deleted
@@ -15017,7 +15033,7 @@ class TestHardDeleteAgent:
         cancellation goes on to the caller."""
         connected_provider.http_client.begin_transaction = AsyncMock(return_value="tx1")
         connected_provider.execute_query = AsyncMock(side_effect=[
-            [], [], [],                          # no knowledge, toolsets, toolset edges
+            [],                                  # no knowledge
             asyncio.CancelledError(),            # cancelled inside the cleanup
         ])
 
@@ -15032,7 +15048,8 @@ class TestHardDeleteAgent:
         """A cleanup that fails after the agent's links were removed is rolled back with them: a later delete finds them again."""
         connected_provider.http_client.begin_transaction = AsyncMock(return_value="tx1")
         connected_provider.execute_query = AsyncMock(side_effect=[
-            [], [], [],                          # no knowledge, toolsets, toolset edges
+            [],                                  # no knowledge
+            [],                                  # no agent -> toolset edges
             ["agentMcpServers/s1"],              # the agent's server links, removed in tx1
             RuntimeError("server gone"),         # the cleanup fails
         ])
@@ -15059,8 +15076,7 @@ class TestHardDeleteAgent:
         """Test that permissions edges are counted."""
         connected_provider.execute_query = AsyncMock(side_effect=[
             [],                      # no knowledge
-            [],                      # no toolsets
-            [{"_key": "te1"}],       # toolset edges deleted
+            [],                      # no agent -> toolset edges
             [],                      # no agent -> MCP server edges (none removed, no server re-checked)
             [{"_key": "p1"}, {"_key": "p2"}, {"_key": "p3"}],  # 3 permissions deleted
             [{"_key": "a1"}],        # agent deleted

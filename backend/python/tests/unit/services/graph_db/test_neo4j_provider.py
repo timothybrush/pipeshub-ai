@@ -982,11 +982,8 @@ class TestHardDeleteAgent:
             side_effect=[
                 [{"kid_list": ["k1", "k2"], "rel_count": 2}],  # step 1
                 [{"deleted_count": 2}],  # step 2 knowledge delete
-                [{"toolset_ids": ["ts1", "ts2"]}],  # step 3
-                [{"tid_list": ["t1", "t2"], "rel_count": 3}],  # step 4 tool rel delete
-                [{"deleted_count": 2}],  # step 5 tool delete
-                [{"rel_count": 2}],  # step 6 agent->toolset rel delete
-                [{"deleted_count": 2}],  # step 7 toolset delete
+                # steps 3-7, one statement: 2 agent->toolset rels, 2 orphaned toolsets, 2 tools only they held, 3 toolset->tool rels
+                [{"agent_rels": 2, "deleted_count": 2, "tool_count": 2, "rel_count": 3}],
                 # step 7b, one statement: 1 agent->MCP server rel, 1 orphaned server, 1 tool only it held, its 2 server->tool rels
                 [{"agent_rels": 1, "deleted_count": 1, "tool_count": 1, "rel_count": 2}],
                 [{"deleted_count": 1}],  # step 8 delete agent
@@ -1003,9 +1000,12 @@ class TestHardDeleteAgent:
             "edges_deleted": 10,  # 2 + 3 + 2 + 1 agent->server + 2 server->tool
             "mcp_servers_deleted": 1,
         }
-        assert neo4j_provider.client.execute_query.await_count == 9
-        # the agent's server links and the cleanup they lead to are one statement: a failed cleanup keeps the links for a retry
-        step_7b = neo4j_provider.client.execute_query.await_args_list[7].args[0]
+        assert neo4j_provider.client.execute_query.await_count == 5
+        # the agent's toolset and server links and the cleanup they lead to are one statement each: a failed cleanup keeps the
+        # links for a retry
+        steps_3_7 = neo4j_provider.client.execute_query.await_args_list[2].args[0]
+        assert "DELETE x" in steps_3_7 and "DETACH DELETE tool" in steps_3_7 and "DETACH DELETE toolset" in steps_3_7
+        step_7b = neo4j_provider.client.execute_query.await_args_list[3].args[0]
         assert "DELETE x" in step_7b and "DETACH DELETE tool" in step_7b and "DETACH DELETE server" in step_7b
 
     @pytest.mark.asyncio
@@ -1015,8 +1015,7 @@ class TestHardDeleteAgent:
         neo4j_provider.client.execute_query = AsyncMock(
             side_effect=[
                 [{"kid_list": [], "rel_count": 0}],  # step 1
-                [{"toolset_ids": []}],  # step 3
-                [{"rel_count": 0}],  # step 6
+                [],  # steps 3-7: no toolset
                 [],  # step 7b: no MCP server
                 [{"deleted_count": 1}],  # step 8
             ]
@@ -1032,16 +1031,15 @@ class TestHardDeleteAgent:
             "edges_deleted": 0,
             "mcp_servers_deleted": 0,
         }
-        # Only steps 1, 3, 6, 7b (the MCP server lookup), 8 should execute in this branch
-        assert neo4j_provider.client.execute_query.await_count == 5
+        # Only steps 1, 3-7 (the toolset statement), 7b (the MCP server statement), 8 should execute in this branch
+        assert neo4j_provider.client.execute_query.await_count == 4
 
     @pytest.mark.asyncio
     async def test_handles_none_results_without_crashing(self, neo4j_provider: Neo4jProvider):
         neo4j_provider.client.execute_query = AsyncMock(
             side_effect=[
                 None,  # step 1
-                None,  # step 3
-                None,  # step 6
+                None,  # steps 3-7
                 None,  # step 7b
                 None,  # step 8
             ]
@@ -2581,8 +2579,7 @@ class TestUserAndOrganizationLookups:
             side_effect=[
                 [{"kid_list": ["k1", "k2"], "rel_count": 2}],  # step 1
                 [{"deleted_count": 1}],  # step 2 knowledge deleted only one -> warn
-                [{"toolset_ids": []}],  # step 3
-                [{"rel_count": 0}],  # step 6
+                [],  # steps 3-7: no toolset
                 [{"sid_list": [], "rel_count": 0}],  # step 7b: no MCP server
                 [{"deleted_count": 1}],  # step 8
             ]

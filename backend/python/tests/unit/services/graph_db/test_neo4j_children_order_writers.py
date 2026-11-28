@@ -56,7 +56,7 @@ UNTOUCHED = {
     "ensure_app_membership": "a principal's edge to an App",
     "ensure_taxonomy_hierarchy_edge": "taxonomy edges",
     "ensure_team_app_edge": "a team's edge to an App",
-    "hard_delete_agent": "an agent, its MCP servers and their tools (none is a browse's child), and their lock flag",
+    "hard_delete_agent": "an agent, its toolsets, MCP servers and their tools (none is a browse's child), and their lock flag",
     "reap_stale_external_app_relations": "user-app edges (their own flag, to lock them) and the people they stranded; neither is a browse's child",
     "heal_taxonomy_alias_nodes": "taxonomy nodes",
     "migrate_legacy_kb_to_app": "turns a group into an App, which is never a browse's child, and moves records' connector",

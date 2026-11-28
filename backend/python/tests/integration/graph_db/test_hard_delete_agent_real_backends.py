@@ -116,6 +116,32 @@ async def test_two_agents_sharing_a_server_deleted_at_once_take_it(world: tuple[
     assert await _present(graph, ids) == {"loose_mcp", "kept_tool"}
 
 
+async def test_two_agents_sharing_a_toolset_deleted_at_once_take_it(store: IGraphDBProvider) -> None:
+    """The last two agents of a toolset deleted at once: whichever removes the last link takes the toolset, its tools and the
+    links between them. Neither delete may fail, and nothing may stay."""
+    seeded = Seeded(store)
+    failures, left = [], []
+    try:
+        for round_ in range(ROUNDS):
+            run = uuid.uuid4().hex[:10]
+            a, b = seeded.key(f"a-tc-{run}", C.AGENT_INSTANCES.value), seeded.key(f"b-tc-{run}", C.AGENT_INSTANCES.value)
+            toolset = seeded.key(f"ts-tc-{run}", C.AGENT_TOOLSETS.value)
+            tools = [seeded.key(f"t{i}-tc-{run}", C.AGENT_TOOLS.value) for i in range(3)]
+            await seeded.agents(a, b)
+            await seeded.toolsets(toolset)
+            await seeded.tools(*tools)
+            await seeded.link_toolsets([(a, toolset), (b, toolset)], [(toolset, t) for t in tools])
+            results = await asyncio.gather(store.hard_delete_agent(a), store.hard_delete_agent(b))
+            failures += [round_ for r in results if r["agents_deleted"] != 1]
+            left += await seeded.present()
+            left += [f"{toolset}->{t}" for t in tools
+                     if await store.get_edge(toolset, C.AGENT_TOOLSETS.value, t, C.AGENT_TOOLS.value, C.TOOLSET_HAS_TOOL.value) is not None]
+        assert failures == [], f"a delete failed in rounds {failures}"
+        assert left == [], f"left behind: {left}"
+    finally:
+        await seeded.remove()
+
+
 async def test_deleting_every_agent_leaves_no_agent_subgraph(world: tuple[IGraphDBProvider, dict[str, str]]) -> None:
     """``hard_delete_all_agents`` (migrations, cleanup) takes every agent's knowledge, toolsets, MCP servers and the tools only they hold.
     It deletes every agent of the store, so it runs only when this run is the store's sole user (no pytest-xdist workers)."""
@@ -181,6 +207,17 @@ class Seeded:
             assert await self.graph.batch_create_edges([_edge(C.AGENT_MCP_SERVERS.value, s, C.AGENT_TOOLS.value, t) for s, t in server_tools],
                                                        C.MCP_SERVER_HAS_TOOL.value)
 
+    async def toolsets(self, *keys: str) -> None:
+        now = get_epoch_timestamp_in_ms()
+        assert await self.graph.batch_upsert_nodes([{"_key": k, "name": k, "displayName": k, "type": "app", "userId": "u", "createdBy": "u",
+                                                     "createdAtTimestamp": now} for k in keys], C.AGENT_TOOLSETS.value)
+
+    async def link_toolsets(self, agent_toolsets: list[tuple[str, str]], toolset_tools: list[tuple[str, str]]) -> None:
+        assert await self.graph.batch_create_edges([_edge(C.AGENT_INSTANCES.value, a, C.AGENT_TOOLSETS.value, t) for a, t in agent_toolsets],
+                                                   C.AGENT_HAS_TOOLSET.value)
+        assert await self.graph.batch_create_edges([_edge(C.AGENT_TOOLSETS.value, t, C.AGENT_TOOLS.value, tool) for t, tool in toolset_tools],
+                                                   C.TOOLSET_HAS_TOOL.value)
+
     async def present(self) -> list[str]:
         return [name for name, coll in self.keys if await self.graph.get_document(name, coll) is not None]
 
@@ -234,5 +271,90 @@ async def test_a_tool_two_servers_of_one_agent_share(store: IGraphDBProvider, ot
         result = await store.hard_delete_agent(agent_key)
         assert result["agents_deleted"] == 1
         assert set(await seeded.present()) == ({other_key, s2, tool} if other_keeps_one else {other_key})
+    finally:
+        await seeded.remove()
+
+
+async def test_a_toolset_another_agent_links_keeps_its_tools(store: IGraphDBProvider) -> None:
+    """Two agents link one toolset with a tool; the first also has a toolset of its own. Deleting the first takes its own toolset
+    and tool; the shared toolset, its tool and the link between them stay for the second agent."""
+    seeded = Seeded(store)
+    run = uuid.uuid4().hex[:10]
+    agent_key, other_key = (seeded.key(f"{k}-ts-{run}", C.AGENT_INSTANCES.value) for k in ("agent", "other"))
+    shared, own = (seeded.key(f"{k}-ts-{run}", C.AGENT_TOOLSETS.value) for k in ("shared", "own"))
+    shared_tool, own_tool = (seeded.key(f"{k}-tool-ts-{run}", C.AGENT_TOOLS.value) for k in ("shared", "own"))
+    try:
+        await seeded.agents(agent_key, other_key)
+        await seeded.toolsets(shared, own)
+        await seeded.tools(shared_tool, own_tool)
+        await seeded.link_toolsets([(agent_key, shared), (other_key, shared), (agent_key, own)], [(shared, shared_tool), (own, own_tool)])
+        result = await store.hard_delete_agent(agent_key)
+        assert (result["agents_deleted"], result["toolsets_deleted"], result["tools_deleted"]) == (1, 1, 1)
+        assert set(await seeded.present()) == {other_key, shared, shared_tool}
+        assert await store.get_edge(shared, C.AGENT_TOOLSETS.value, shared_tool, C.AGENT_TOOLS.value, C.TOOLSET_HAS_TOOL.value) is not None
+        assert await store.get_edge(other_key, C.AGENT_INSTANCES.value, shared, C.AGENT_TOOLSETS.value, C.AGENT_HAS_TOOLSET.value) is not None
+    finally:
+        await seeded.remove()
+
+
+@pytest.mark.parametrize("deleted_holder", ["toolset", "mcp_server"])
+async def test_a_tool_another_kind_of_holder_links_stays(store: IGraphDBProvider, deleted_holder: str) -> None:
+    """A tool held by a toolset and by an MCP server, each used by a different agent. Deleting the agent of one holder takes
+    that holder; the tool and the other holder's link to it stay."""
+    seeded = Seeded(store)
+    run = uuid.uuid4().hex[:10]
+    agent_key, other_key = (seeded.key(f"{k}-kind-{run}", C.AGENT_INSTANCES.value) for k in ("agent", "other"))
+    toolset = seeded.key(f"ts-kind-{run}", C.AGENT_TOOLSETS.value)
+    server = seeded.key(f"s-kind-{run}", C.AGENT_MCP_SERVERS.value)
+    tool = seeded.key(f"tool-kind-{run}", C.AGENT_TOOLS.value)
+    toolset_agent, server_agent = (agent_key, other_key) if deleted_holder == "toolset" else (other_key, agent_key)
+    try:
+        await seeded.agents(agent_key, other_key)
+        await seeded.toolsets(toolset)
+        await seeded.servers(server)
+        await seeded.tools(tool)
+        await seeded.link_toolsets([(toolset_agent, toolset)], [(toolset, tool)])
+        await seeded.link([(server_agent, server)], [(server, tool)])
+        result = await store.hard_delete_agent(agent_key)
+        assert (result["agents_deleted"], result["tools_deleted"]) == (1, 0)
+        kept = {other_key, tool, server if deleted_holder == "toolset" else toolset}
+        assert set(await seeded.present()) == kept
+        link = ((server, C.AGENT_MCP_SERVERS.value, C.MCP_SERVER_HAS_TOOL.value) if deleted_holder == "toolset"
+                else (toolset, C.AGENT_TOOLSETS.value, C.TOOLSET_HAS_TOOL.value))
+        assert await store.get_edge(link[0], link[1], tool, C.AGENT_TOOLS.value, link[2]) is not None
+    finally:
+        await seeded.remove()
+
+
+@pytest.mark.arango_only
+@pytest.mark.parametrize("missing", ["toolset_tool", "server_tool", "toolset", "server"])
+async def test_a_link_to_a_missing_node_does_not_block_the_delete(store: IGraphDBProvider, missing: str) -> None:
+    """ArangoDB keeps an edge whose node is gone (a Neo4j relationship cannot outlive its node, so the case is ArangoDB only). The delete removes the dangling link and still deletes the
+    agent, instead of failing on the missing node and rolling back the link it would need to retry."""
+    seeded = Seeded(store)
+    run = uuid.uuid4().hex[:10]
+    agent_key = seeded.key(f"agent-gone-{run}", C.AGENT_INSTANCES.value)
+    toolset, server = f"ts-gone-{run}", f"s-gone-{run}"
+    gone = f"gone-{run}"
+    try:
+        await seeded.agents(agent_key)
+        if missing == "toolset":
+            links = [(C.AGENT_INSTANCES.value, agent_key, C.AGENT_TOOLSETS.value, gone, C.AGENT_HAS_TOOLSET.value)]
+        elif missing == "server":
+            links = [(C.AGENT_INSTANCES.value, agent_key, C.AGENT_MCP_SERVERS.value, gone, C.AGENT_HAS_MCP_SERVER.value)]
+        elif missing == "toolset_tool":
+            await seeded.toolsets(seeded.key(toolset, C.AGENT_TOOLSETS.value))
+            links = [(C.AGENT_INSTANCES.value, agent_key, C.AGENT_TOOLSETS.value, toolset, C.AGENT_HAS_TOOLSET.value),
+                     (C.AGENT_TOOLSETS.value, toolset, C.AGENT_TOOLS.value, gone, C.TOOLSET_HAS_TOOL.value)]
+        else:
+            await seeded.servers(seeded.key(server, C.AGENT_MCP_SERVERS.value))
+            links = [(C.AGENT_INSTANCES.value, agent_key, C.AGENT_MCP_SERVERS.value, server, C.AGENT_HAS_MCP_SERVER.value),
+                     (C.AGENT_MCP_SERVERS.value, server, C.AGENT_TOOLS.value, gone, C.MCP_SERVER_HAS_TOOL.value)]
+        for fc, fi, tc, ti, coll in links:
+            assert await store.batch_create_edges([_edge(fc, fi, tc, ti)], coll)
+        result = await store.hard_delete_agent(agent_key)
+        assert result["agents_deleted"] == 1
+        assert await seeded.present() == []
+        assert [link for link in links if await store.get_edge(link[1], link[0], link[3], link[2], link[4]) is not None] == []
     finally:
         await seeded.remove()

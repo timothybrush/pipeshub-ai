@@ -29359,22 +29359,23 @@ class ArangoHTTPProvider(NamedEntityGraphMixin, IGraphDBProvider):
             error_class.log_failure(self.logger, "graph.provider.failed", e, include_error_text=False, op="delete_agent")
             return False
 
-    async def _in_mcp_transaction(self, work: Callable[[str], Awaitable[_T]], transaction: str | None) -> _T:
-        """Run an MCP server cleanup all-or-nothing. In the caller's transaction it is the caller's; otherwise in a stream
-        transaction of its own that holds the agent-to-server links exclusively, so concurrent agent deletes clean up one at a
-        time and each sees the other's removals, and a failure leaves the links for a retry to find. Run again on a
-        write-write conflict or lock timeout with another writer."""
+    async def _in_agent_cleanup_transaction(self, work: Callable[[str], Awaitable[_T]], transaction: str | None) -> _T:
+        """Run an agent's toolset and MCP server cleanup all-or-nothing. In the caller's transaction it is the caller's;
+        otherwise in a stream transaction of its own that holds the agent-to-toolset and agent-to-server links exclusively,
+        so concurrent agent deletes clean up one at a time and each sees the other's removals, and a failure leaves the links
+        for a retry to find. Run again on a write-write conflict or lock timeout with another writer."""
         if transaction is not None:
             return await work(transaction)
-        write = [CollectionNames.AGENT_HAS_MCP_SERVER.value, CollectionNames.MCP_SERVER_HAS_TOOL.value,
-                 CollectionNames.AGENT_TOOLS.value, CollectionNames.AGENT_MCP_SERVERS.value]
+        exclusive = [CollectionNames.AGENT_HAS_TOOLSET.value, CollectionNames.AGENT_HAS_MCP_SERVER.value]
+        write = [*exclusive, CollectionNames.TOOLSET_HAS_TOOL.value, CollectionNames.MCP_SERVER_HAS_TOOL.value,
+                 CollectionNames.AGENT_TOOLS.value, CollectionNames.AGENT_TOOLSETS.value, CollectionNames.AGENT_MCP_SERVERS.value]
         attempt = 0
         while True:
             txn: str | None = None
             committed = False
             try:
                 # Taking the exclusive links is inside the retry: another delete holding them answers a lock timeout.
-                txn = await self.http_client.begin_transaction(read=write, write=write, exclusive=[CollectionNames.AGENT_HAS_MCP_SERVER.value])
+                txn = await self.http_client.begin_transaction(read=write, write=write, exclusive=exclusive)
                 result = await work(txn)
                 await self.http_client.commit_transaction(txn)
                 committed = True
@@ -29389,9 +29390,74 @@ class ArangoHTTPProvider(NamedEntityGraphMixin, IGraphDBProvider):
                     await asyncio.shield(self._abort_quietly(txn))
             await asyncio.sleep(random.uniform(0.02, 0.1) * attempt)
 
+    async def _delete_agent_toolsets(self, agent_doc_id: str, transaction: str) -> tuple[int, int, int]:
+        """The agent's toolset links, then each of those toolsets no agent links any more: its tool links, the tools nothing
+        else holds (no other toolset and no MCP server), and itself. Returns (links removed, tools removed, toolsets removed).
+        A link whose node is already gone is removed and the missing node skipped, so it cannot fail the delete for good."""
+        edges = tools = 0
+        linked_toolset_ids = await self.execute_query(
+            f"""
+            FOR edge IN {CollectionNames.AGENT_HAS_TOOLSET.value}
+                FILTER edge._from == @agent_doc_id
+                REMOVE edge IN {CollectionNames.AGENT_HAS_TOOLSET.value}
+                RETURN OLD._to
+            """,
+            bind_vars={"agent_doc_id": agent_doc_id}, transaction=transaction) or []
+        if not linked_toolset_ids:
+            return 0, 0, 0
+        edges += len(linked_toolset_ids)
+        toolset_ids = await self.execute_query(
+            f"""
+            FOR tsid IN UNIQUE(@toolset_ids)
+                FILTER LENGTH(
+                    FOR edge IN {CollectionNames.AGENT_HAS_TOOLSET.value}
+                        FILTER edge._to == tsid
+                        LIMIT 1 RETURN 1
+                ) == 0
+                RETURN tsid
+            """,
+            bind_vars={"toolset_ids": linked_toolset_ids}, transaction=transaction) or []
+        if not toolset_ids:
+            return edges, 0, 0
+        tool_ids = await self.execute_query(
+            f"""
+            FOR tsid IN @toolset_ids
+                FOR edge IN {CollectionNames.TOOLSET_HAS_TOOL.value}
+                    FILTER edge._from == tsid
+                    REMOVE edge IN {CollectionNames.TOOLSET_HAS_TOOL.value}
+                    RETURN OLD._to
+            """,
+            bind_vars={"toolset_ids": toolset_ids}, transaction=transaction) or []
+        if tool_ids:
+            edges += len(tool_ids)
+            deleted_tools = await self.execute_query(
+                f"""
+                FOR tid IN UNIQUE(@tool_ids)
+                    FILTER LENGTH(
+                        FOR edge IN UNION(
+                            (FOR e IN {CollectionNames.TOOLSET_HAS_TOOL.value} FILTER e._to == tid LIMIT 1 RETURN 1),
+                            (FOR e IN {CollectionNames.MCP_SERVER_HAS_TOOL.value} FILTER e._to == tid LIMIT 1 RETURN 1)
+                        ) RETURN edge
+                    ) == 0
+                    FILTER DOCUMENT(tid) != null
+                    REMOVE PARSE_IDENTIFIER(tid).key IN {CollectionNames.AGENT_TOOLS.value}
+                    RETURN OLD
+                """,
+                bind_vars={"tool_ids": tool_ids}, transaction=transaction) or []
+            tools += len(deleted_tools)
+        deleted_toolsets = await self.execute_query(
+            f"""
+            FOR tsid IN @toolset_ids
+                FILTER DOCUMENT(tsid) != null
+                REMOVE PARSE_IDENTIFIER(tsid).key IN {CollectionNames.AGENT_TOOLSETS.value}
+                RETURN OLD
+            """,
+            bind_vars={"toolset_ids": toolset_ids}, transaction=transaction) or []
+        return edges, tools, len(deleted_toolsets)
+
     async def _delete_agent_mcp_servers(self, agent_doc_id: str, transaction: str) -> tuple[int, int, int]:
-        """The agent's server links, then each of those servers no agent is attached to any more: its tool links, the tools no
-        other server holds, and itself. Returns (links removed, tools removed, servers removed)."""
+        """The agent's server links, then each of those servers no agent is attached to any more: its tool links, the tools
+        nothing else holds (no other server and no toolset), and itself. Returns (links removed, tools removed, servers removed)."""
         edges = tools = servers = 0
         attached_server_ids = await self.execute_query(
             f"""
@@ -29431,13 +29497,12 @@ class ArangoHTTPProvider(NamedEntityGraphMixin, IGraphDBProvider):
             deleted_mcp_tools = await self.execute_query(
                 f"""
                 FOR tid IN UNIQUE(@mcp_tool_ids)
-                    LET remaining = FIRST(
-                        FOR edge IN {CollectionNames.MCP_SERVER_HAS_TOOL.value}
-                            FILTER edge._to == tid
-                            LIMIT 1
-                            RETURN 1
-                    )
+                    LET remaining = FIRST(UNION(
+                        (FOR edge IN {CollectionNames.MCP_SERVER_HAS_TOOL.value} FILTER edge._to == tid LIMIT 1 RETURN 1),
+                        (FOR edge IN {CollectionNames.TOOLSET_HAS_TOOL.value} FILTER edge._to == tid LIMIT 1 RETURN 1)
+                    ))
                     FILTER remaining == null
+                    FILTER DOCUMENT(tid) != null
                     REMOVE PARSE_IDENTIFIER(tid).key IN {CollectionNames.AGENT_TOOLS.value}
                     RETURN OLD
                 """,
@@ -29446,6 +29511,7 @@ class ArangoHTTPProvider(NamedEntityGraphMixin, IGraphDBProvider):
         deleted_mcp_servers = await self.execute_query(
             f"""
             FOR msid IN @mcp_server_ids
+                FILTER DOCUMENT(msid) != null
                 REMOVE PARSE_IDENTIFIER(msid).key IN {CollectionNames.AGENT_MCP_SERVERS.value}
                 RETURN OLD
             """,
@@ -29460,12 +29526,12 @@ class ArangoHTTPProvider(NamedEntityGraphMixin, IGraphDBProvider):
         This deletes (in order):
         1. Agent -> Knowledge edges (AGENT_HAS_KNOWLEDGE)
         2. Knowledge nodes (AGENT_KNOWLEDGE)
-        3. Toolset -> Tool edges (TOOLSET_HAS_TOOL)
-        4. Tool nodes (AGENT_TOOLS)
-        5. Agent -> Toolset edges (AGENT_HAS_TOOLSET)
-        6. Toolset nodes (AGENT_TOOLSETS)
-        7. MCP server -> Tool edges (MCP_SERVER_HAS_TOOL), tool nodes (AGENT_TOOLS),
-           Agent -> MCP server edges (AGENT_HAS_MCP_SERVER), MCP server nodes (AGENT_MCP_SERVERS)
+        3-6. Agent -> Toolset edges (AGENT_HAS_TOOLSET), then, for the toolsets no agent links any more, their
+           Toolset -> Tool edges (TOOLSET_HAS_TOOL), the tool nodes (AGENT_TOOLS) no other toolset holds, and the
+           toolset nodes (AGENT_TOOLSETS)
+        7. Agent -> MCP server edges (AGENT_HAS_MCP_SERVER), then the same for the MCP servers: MCP server -> Tool edges
+           (MCP_SERVER_HAS_TOOL), tool nodes (AGENT_TOOLS), MCP server nodes (AGENT_MCP_SERVERS). Steps 3 and 7 run in
+           one transaction (_in_agent_cleanup_transaction)
         8. Permission edges (PERMISSION) - user, org, team permissions
         9. The agent document itself (AGENT_INSTANCES)
 
@@ -29528,119 +29594,14 @@ class ArangoHTTPProvider(NamedEntityGraphMixin, IGraphDBProvider):
                         f"Skipped {skipped} knowledge node(s) still referenced by other agents for agent {agent_id}"
                     )
 
-            # Step 3: Find toolsets connected to this agent
-            find_toolset_ids_query = f"""
-            FOR edge IN {CollectionNames.AGENT_HAS_TOOLSET.value}
-                FILTER edge._from == @agent_doc_id
-                RETURN edge._to
-            """
+            # Steps 3-7: toolsets, then MCP servers (see _delete_agent_toolsets and _delete_agent_mcp_servers), in one transaction.
+            async def cleanup(txn: str) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
+                return await self._delete_agent_toolsets(agent_doc_id, txn), await self._delete_agent_mcp_servers(agent_doc_id, txn)
 
-            toolset_ids = await self.execute_query(
-                find_toolset_ids_query,
-                bind_vars={"agent_doc_id": agent_doc_id},
-                transaction=transaction
-            )
-
-            if toolset_ids:
-                # Step 4: Delete toolset -> tool edges and collect the _to IDs
-                delete_tool_edges_query = f"""
-                FOR tsid IN @toolset_ids
-                    FOR edge IN {CollectionNames.TOOLSET_HAS_TOOL.value}
-                        FILTER edge._from == tsid
-                        REMOVE edge IN {CollectionNames.TOOLSET_HAS_TOOL.value}
-                        RETURN OLD._to
-                """
-
-                tool_ids = await self.execute_query(
-                    delete_tool_edges_query,
-                    bind_vars={"toolset_ids": toolset_ids},
-                    transaction=transaction
-                )
-
-                if tool_ids:
-                    edges_deleted += len(tool_ids)
-
-                    # Step 5: Delete orphaned tool nodes
-                    delete_orphaned_tools_query = f"""
-                    FOR tid IN @tool_ids
-                        LET remaining = FIRST(
-                            FOR edge IN {CollectionNames.TOOLSET_HAS_TOOL.value}
-                                FILTER edge._to == tid
-                                LIMIT 1
-                                RETURN 1
-                        )
-                        FILTER remaining == null
-                        REMOVE PARSE_IDENTIFIER(tid).key IN {CollectionNames.AGENT_TOOLS.value}
-                        RETURN OLD
-                    """
-
-                    deleted_tools = await self.execute_query(
-                        delete_orphaned_tools_query,
-                        bind_vars={"tool_ids": tool_ids},
-                        transaction=transaction
-                    )
-
-                    if deleted_tools:
-                        tools_deleted = len(deleted_tools)
-
-                    skipped = len(tool_ids) - tools_deleted
-                    if skipped > 0:
-                        self.logger.warning(
-                            f"Skipped {skipped} tool node(s) still referenced by other toolsets for agent {agent_id}"
-                        )
-
-            # Step 6: Delete agent -> toolset edges
-            delete_toolset_edges_query = f"""
-            FOR edge IN {CollectionNames.AGENT_HAS_TOOLSET.value}
-                FILTER edge._from == @agent_doc_id
-                REMOVE edge IN {CollectionNames.AGENT_HAS_TOOLSET.value}
-                RETURN OLD
-            """
-
-            deleted_toolset_edges = await self.execute_query(
-                delete_toolset_edges_query,
-                bind_vars={"agent_doc_id": agent_doc_id},
-                transaction=transaction
-            )
-
-            if deleted_toolset_edges:
-                edges_deleted += len(deleted_toolset_edges)
-
-            # Step 7: Delete orphaned toolset nodes
-            if toolset_ids:
-                delete_orphaned_toolsets_query = f"""
-                FOR tsid IN @toolset_ids
-                    LET remaining = FIRST(
-                        FOR edge IN {CollectionNames.AGENT_HAS_TOOLSET.value}
-                            FILTER edge._to == tsid
-                            LIMIT 1
-                            RETURN 1
-                    )
-                    FILTER remaining == null
-                    REMOVE PARSE_IDENTIFIER(tsid).key IN {CollectionNames.AGENT_TOOLSETS.value}
-                    RETURN OLD
-                """
-
-                deleted_toolsets = await self.execute_query(
-                    delete_orphaned_toolsets_query,
-                    bind_vars={"toolset_ids": toolset_ids},
-                    transaction=transaction
-                )
-
-                if deleted_toolsets:
-                    toolsets_deleted = len(deleted_toolsets)
-
-                skipped = len(toolset_ids) - toolsets_deleted
-                if skipped > 0:
-                    self.logger.warning(
-                        f"Skipped {skipped} toolset node(s) still referenced by other agents for agent {agent_id}"
-                    )
-
-            # Steps 7b-7f: MCP servers (see _delete_agent_mcp_servers).
-            mcp_edges, mcp_tools, mcp_servers_deleted = await self._in_mcp_transaction(
-                lambda txn: self._delete_agent_mcp_servers(agent_doc_id, txn), transaction)
-            edges_deleted += mcp_edges
-            tools_deleted += mcp_tools
+            (ts_edges, ts_tools, toolsets_deleted), (mcp_edges, mcp_tools, mcp_servers_deleted) = await self._in_agent_cleanup_transaction(
+                cleanup, transaction)
+            edges_deleted += ts_edges + mcp_edges
+            tools_deleted += ts_tools + mcp_tools
 
             # Step 8: Delete all permission edges pointing to this agent
             delete_permissions_query = f"""

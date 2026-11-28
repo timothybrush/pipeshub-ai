@@ -29021,11 +29021,10 @@ class Neo4jProvider(NamedEntityGraphMixin, IGraphDBProvider):
         Deletion order:
         1. Collect knowledge IDs, delete agent->knowledge relationships
         2. Delete orphaned knowledge nodes (not referenced by other agents)
-        3. Collect toolset IDs and tool IDs, delete toolset->tool relationships
-        4. Delete orphaned tool nodes (not referenced by other toolsets)
-        5. Delete agent->toolset relationships
-        6. Delete orphaned toolset nodes (not referenced by other agents)
-        7. DETACH DELETE the agent node (also removes permission edges and any unexpected relationships)
+        3. Delete agent->toolset relationships, then, for the toolsets no agent links any more, their toolset->tool
+           relationships, the tool nodes no other toolset holds, and the toolsets themselves (one statement)
+        4. The same for MCP servers and their tools
+        5. DETACH DELETE the agent node (also removes permission edges and any unexpected relationships)
 
         Returns:
             Dict with counts of deleted entities
@@ -29086,98 +29085,53 @@ class Neo4jProvider(NamedEntityGraphMixin, IGraphDBProvider):
                         f"for agent {agent_id}"
                     )
 
-            # ── Step 3: Collect toolset IDs ──
+            # ── Steps 3-7: Agent->toolset edges, then the toolsets no agent links any more, their tool edges and the tools only
+            # they hold ──
+            # One statement, locked as in step 7b: the last two agents of a toolset deleted at once each see the other's removed
+            # link, so the last cleanup takes the toolset and its tools, and a failed cleanup keeps the links for a retry.
+            # A tool is kept while anything outside the orphaned toolsets links it: another toolset or an MCP server.
             result = await self.client.execute_query(
                 f"""
-                MATCH (:{agent_label} {{id: $agent_id}})-[:{has_toolset_rel}]->(toolset:{toolset_label})
-                RETURN collect(DISTINCT toolset.id) as toolset_ids
-                """,
-                parameters={"agent_id": agent_id},
-                txn_id=transaction
-            )
-            toolset_ids = result[0].get("toolset_ids", []) if result else []
-
-            if toolset_ids:
-                # ── Step 4: Collect tool IDs, then delete toolset->tool edges ──
-                result = await self.client.execute_query(
-                    f"""
-                    MATCH (toolset:{toolset_label})-[tr:{has_tool_rel}]->(tool:{tool_label})
-                    WHERE toolset.id IN $toolset_ids
-                    WITH collect(DISTINCT tool.id) as tid_list, collect(tr) as rels
-                    UNWIND rels as tr
-                    DELETE tr
-                    RETURN tid_list, count(tr) as rel_count
-                    """,
-                    parameters={"toolset_ids": toolset_ids},
-                    txn_id=transaction
-                )
-                tool_ids = []
-                if result:
-                    tool_ids = result[0].get("tid_list", []) or []
-                    edges_deleted += result[0].get("rel_count", 0) or 0
-
-                # ── Step 5: Delete orphaned tool nodes in one query ──
-                if tool_ids:
-                    result = await self.client.execute_query(
-                        f"""
-                        MATCH (tool:{tool_label})
-                        WHERE tool.id IN $isolated_ids
-                        OPTIONAL MATCH (tool)<-[r:{has_tool_rel}]-()
-                        WITH tool, count(r) as remaining
-                        WHERE remaining = 0
-                        DELETE tool
-                        RETURN count(tool) as deleted_count
-                        """,
-                        parameters={"isolated_ids": tool_ids},
-                        txn_id=transaction
-                    )
-                    if result:
-                        tools_deleted = result[0].get("deleted_count", 0) or 0
-
-                    skipped = len(tool_ids) - tools_deleted
-                    if skipped > 0:
-                        self.logger.warning(
-                            f"Skipped {skipped} tool node(s) still referenced by other toolsets "
-                            f"for agent {agent_id}"
-                        )
-
-            # ── Step 6: Delete agent->toolset edges ──
-            result = await self.client.execute_query(
-                f"""
-                MATCH (:{agent_label} {{id: $agent_id}})-[tsr:{has_toolset_rel}]->(:{toolset_label})
-                DELETE tsr
-                RETURN count(tsr) as rel_count
+                OPTIONAL MATCH (:{agent_label} {{id: $agent_id}})-[tsr:{has_toolset_rel}]->(linked:{toolset_label})
+                WITH collect(DISTINCT linked.id) as tsid_list, collect(tsr) as rels
+                FOREACH (x IN rels | DELETE x)
+                WITH tsid_list, size(rels) as agent_rels
+                CALL (tsid_list) {{
+                    MATCH (toolset:{toolset_label})
+                    WHERE toolset.id IN tsid_list
+                    WITH toolset ORDER BY toolset.id
+                    SET toolset.{_MATCH_LOCK} = true
+                    REMOVE toolset.{_MATCH_LOCK}
+                    WITH toolset WHERE NOT EXISTS {{ MATCH (toolset)<-[:{has_toolset_rel}]-() }}
+                    RETURN collect(toolset.id) as orphan_ids
+                }}
+                CALL (orphan_ids) {{
+                    MATCH (orphan:{toolset_label})-[:{has_tool_rel}]->(tool:{tool_label})
+                    WHERE orphan.id IN orphan_ids
+                    WITH DISTINCT tool ORDER BY tool.id
+                    SET tool.{_MATCH_LOCK} = true
+                    REMOVE tool.{_MATCH_LOCK}
+                    WITH tool WHERE NOT EXISTS {{ MATCH (tool)<--(other) WHERE NOT (other:{toolset_label} AND other.id IN orphan_ids) }}
+                    WITH tool, COUNT {{ (tool)<-[:{has_tool_rel}]-() }} as links
+                    DETACH DELETE tool
+                    RETURN count(tool) as tool_count, sum(links) as tool_links
+                }}
+                CALL (orphan_ids) {{
+                    MATCH (toolset:{toolset_label})
+                    WHERE toolset.id IN orphan_ids
+                    WITH toolset, COUNT {{ (toolset)-[:{has_tool_rel}]->() }} as links
+                    DETACH DELETE toolset
+                    RETURN count(toolset) as deleted_count, sum(links) as toolset_links
+                }}
+                RETURN agent_rels, deleted_count, tool_count, tool_links + toolset_links as rel_count
                 """,
                 parameters={"agent_id": agent_id},
                 txn_id=transaction
             )
             if result:
-                edges_deleted += result[0].get("rel_count", 0) or 0
-
-            # ── Step 7: Delete orphaned toolset nodes in one query ──
-            if toolset_ids:
-                result = await self.client.execute_query(
-                    f"""
-                    MATCH (toolset:{toolset_label})
-                    WHERE toolset.id IN $isolated_ids
-                    OPTIONAL MATCH (toolset)<-[r:{has_toolset_rel}]-()
-                    WITH toolset, count(r) as remaining
-                    WHERE remaining = 0
-                    DELETE toolset
-                    RETURN count(toolset) as deleted_count
-                    """,
-                    parameters={"isolated_ids": toolset_ids},
-                    txn_id=transaction
-                )
-                if result:
-                    toolsets_deleted = result[0].get("deleted_count", 0) or 0
-
-                skipped = len(toolset_ids) - toolsets_deleted
-                if skipped > 0:
-                    self.logger.warning(
-                        f"Skipped {skipped} toolset node(s) still referenced by other agents "
-                        f"for agent {agent_id}"
-                    )
+                edges_deleted += (result[0].get("agent_rels", 0) or 0) + (result[0].get("rel_count", 0) or 0)
+                toolsets_deleted = result[0].get("deleted_count", 0) or 0
+                tools_deleted += result[0].get("tool_count", 0) or 0
 
             # ── Step 7b: Agent->MCP server edges, then the orphaned MCP servers and their tool nodes ──
             # As the ArangoDB provider deletes them: the agent's DETACH DELETE alone leaves them behind.
@@ -29212,7 +29166,7 @@ class Neo4jProvider(NamedEntityGraphMixin, IGraphDBProvider):
                     WITH DISTINCT tool ORDER BY tool.id
                     SET tool.{_MATCH_LOCK} = true
                     REMOVE tool.{_MATCH_LOCK}
-                    WITH tool WHERE NOT EXISTS {{ MATCH (tool)<-[:{mcp_tool_rel}]-(other) WHERE NOT other.id IN orphan_ids }}
+                    WITH tool WHERE NOT EXISTS {{ MATCH (tool)<--(other) WHERE NOT (other:{mcp_label} AND other.id IN orphan_ids) }}
                     WITH tool, COUNT {{ (tool)<-[:{mcp_tool_rel}]-() }} as links
                     DETACH DELETE tool
                     RETURN count(tool) as tool_count, sum(links) as tool_links
