@@ -16,6 +16,8 @@ import {
   applyCarried,
   releaseCarried,
   copyCarried,
+  resyncCarried,
+  writeWithDocuments,
   restoreCarried,
   verifyCarried,
   type CarryPg,
@@ -209,6 +211,77 @@ describe('docstore-migrate carriers without a database (R45-CARRY)', () => {
       async clear() {
         calls.push({ op: 'clear', collection: '', ids: [] });
       },
+    });
+
+    it('a withDocument carrier: its fields are written with the documents, skipped ones left out; its own step and the follower leave them, a delete still reaches it', async () => {
+      const calls: Call[] = [];
+      const c: Carrier = { ...fake(new Map(), calls), withDocument: true };
+      const U1 = 'a'.repeat(24);
+      const U2 = 'b'.repeat(24);
+      await writeWithDocuments({} as never, 'users', [{ _id: new ObjectId(U1), codingEngine: 'x' }, { _id: new ObjectId(U2) }], new Set([U2]), [c]);
+      // the skipped one's fields go (its rows are gone), the other's are written
+      expect(calls).to.deep.equal([
+        { op: 'remove', collection: 'users', ids: [U2] },
+        { op: 'write', collection: 'users', ids: [U1] },
+      ]);
+      // nothing of the batch is written when one document cannot be read: the unit fails, the documents' rows with it
+      let err: Error | undefined;
+      await writeWithDocuments({} as never, 'users', [{ _id: U1, bad: { ref: new ObjectId() } }], new Set(), [{ ...c, reads: { users: { pick: ['bad'] } } }]).catch((e: Error) => (err = e));
+      expect(err?.message).to.contain('nothing of this batch was written');
+      // a collection the carrier takes whole is not a field: writeWithDocuments never writes it
+      calls.length = 0;
+      await writeWithDocuments({} as never, 'agentWorkspaceHeads', [{ _id: 'h' }], new Set(), [c]);
+      expect(calls).to.deep.equal([]);
+      const mongo = new FakeCarryMongo({ agentWorkspaceHeads: [{ _id: 'h', revision: 1 }], users: [{ _id: new ObjectId(U1), codingEngine: 'x' }, { _id: new ObjectId(U2), codingEngine: 'z' }] });
+      await copyCarried(noPg, mongo, [c]);
+      expect(calls.map((x) => x.collection), 'the carrier step copies only what is not written with the documents').to.deep.equal(['agentWorkspaceHeads']);
+      calls.length = 0;
+      await applyCarried(noPg, 'users', [{ _id: new ObjectId(U1), codingEngine: 'y' }], [U2], [c]);
+      expect(calls).to.deep.equal([{ op: 'remove', collection: 'users', ids: [U2] }]);
+      calls.length = 0;
+      // the copy refused U2 whole (and a member of U1, which is not U1): the resync writes U1's fields only
+      const refusedPg: CarryPg = (fn) =>
+        fn({ query: async (sql: string) => ({ rows: sql.includes('carry_refusals') ? [{ s: U2 }, { s: `${U1}.members[0]` }] : [] }) } as never);
+      await resyncCarried(refusedPg, mongo, [c]);
+      expect(calls, 'a resync clears the carrier and writes all of it again, but no refused document').to.deep.equal([
+        { op: 'clear', collection: '', ids: [] },
+        { op: 'write', collection: 'agentWorkspaceHeads', ids: ['h'] },
+        { op: 'write', collection: 'users', ids: [U1] },
+      ]);
+    });
+
+    it('a withDocument carrier: the fields of a document the importer skips are removed; a skip of part of a document removes nothing', async () => {
+      const calls: Call[] = [];
+      const c: Carrier = { ...fake(new Map(), calls), withDocument: true };
+      const [U1, U2] = ['a'.repeat(24), 'b'.repeat(24)];
+      await writeWithDocuments({} as never, 'users', [{ _id: new ObjectId(U1), codingEngine: 'x' }, { _id: new ObjectId(U2) }], new Set([U2, `${U1}.members[0]`]), [c]);
+      expect(calls).to.deep.equal([
+        { op: 'remove', collection: 'users', ids: [U2] },
+        { op: 'write', collection: 'users', ids: [U1] },
+      ]);
+    });
+
+    it('a withDocument carrier: a document the copy refused whole is left out before its fields are read, by the resync and the verify', async () => {
+      const calls: Call[] = [];
+      const [U1, U2] = ['a'.repeat(24), 'b'.repeat(24)];
+      const c: Carrier = { ...fake(new Map([[U1, { codingEngine: 'x' }]]), calls), collections: [], withDocument: true, reads: { users: { pick: ['codingEngine', 'bad'] } } };
+      // U2 was refused whole by the copy, and its carried fields cannot be read either: writeWithDocuments leaves it out without reading them
+      const mongo = new FakeCarryMongo({ users: [{ _id: new ObjectId(U1), codingEngine: 'x' }, { _id: new ObjectId(U2), bad: { ref: new ObjectId() } }] });
+      const refusedPg: CarryPg = (fn) => fn({ query: async (sql: string) => ({ rows: sql.includes('carry_refusals') ? [{ s: U2 }] : [] }) } as never);
+      await resyncCarried(refusedPg, mongo, [c]);
+      expect(calls).to.deep.equal([
+        { op: 'clear', collection: '', ids: [] },
+        { op: 'write', collection: 'users', ids: [U1] },
+      ]);
+      const [users] = await verifyCarried(refusedPg, mongo, [{ ...c, expected: (_c, d) => [[d.id, { codingEngine: d.doc.codingEngine }]] }]);
+      expect(users).to.deep.include({ collection: 'users', ok: true, refused: [] });
+      // one the copy did not refuse still stops the resync and fails the verify
+      const unread = new FakeCarryMongo({ users: [{ _id: new ObjectId(U1), bad: { ref: new ObjectId() } }] });
+      let err: Error | undefined;
+      await resyncCarried(refusedPg, unread, [c]).catch((e: Error) => (err = e));
+      expect(err?.message).to.contain('nothing more was copied');
+      const [failed] = await verifyCarried(refusedPg, unread, [c]);
+      expect(failed!.ok).to.equal(false);
     });
 
     it('releaseCarried lets every carrier go that can, and says which could not, without stopping at the first', async () => {
