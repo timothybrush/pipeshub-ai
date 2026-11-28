@@ -285,6 +285,26 @@ async def test_a_connector_distrusted_while_another_ones_trust_is_read_takes_the
     assert reads and not any(reads) and {"L1", "A1"} <= seen(got), (reads, got)
 
 
+async def test_a_connector_distrusted_while_its_classes_are_read_admits_no_row_by_class(pg_db, monkeypatch, reads) -> None:
+    """The process comes to distrust app1 while a page reads its class verdicts, and those verdicts (a copy that differs from the walk, which is why it is distrusted) open
+    every class: the page admits nothing by class, every row is the access check's, so u1 sees L1 (its grant) and no other row of app1."""
+    from app.services.graph_db.postgres.kg import net
+    from app.services.graph_db.postgres.kg import read as kg_read
+    p, org = prov(pg_db), new_org()
+    await world(p, pg_db, org, [_perm("u1", "users", "L1")])
+    monkeypatch.setattr(net, "DISTRUSTED", {})
+    asked: list[int] = []
+
+    async def lying(_tx: Any, _org: str, classes: dict, _granted: Any, *, by_sk: bool = False) -> dict:  # noqa: ANN401
+        net.distrust(org, "app1")
+        asked.append(len(classes))
+        return dict.fromkeys(classes, (True, False))
+    monkeypatch.setattr(kg_read, "class_verdicts", lying)
+    got = await pages(p, org, "u1", apps=("app1",))
+    assert asked and (org, "app1") in net.DISTRUSTED, asked
+    assert "L1" in seen(got) and not ({"F", "k0", "k1", "L2", "L3", "L4", "L5"} & seen(got)), got
+
+
 async def test_the_grant_blocks_a_browse_reads_grow_by_a_fraction_of_a_block_per_grant(pg_db, monkeypatch) -> None:
     """The viewer holds 100, then 1,000 grants in another connector. The grant statements of a browse of app1 (the grants, and the grants read per node by the check): kg's read
     is a range of members per principal, packed many to a block; the read by id read the edge and the graph node of each grant (about 3 blocks a grant: 325 -> 3,054)."""

@@ -795,7 +795,7 @@ async def test_a_connectors_classes_are_decided_from_a_row_of_classes_and_a_row_
 
     async def go(tx) -> tuple[dict, int]:
         c = Counted(tx)
-        return await kh_listing.class_sets(c, org, app_sk, kh_listing.KhGrants(held=frozenset(granted))), c.rows
+        return await kh_listing.class_sets(c, org, app_sk, kh_listing.KhGrants(held=frozenset(granted)), app_id="app1"), c.rows
     with ctx(org):
         sets, rows = await pg_db.run(go)
     assert sets["plain"] == {c for c, v in want.items() if v and v[0]}

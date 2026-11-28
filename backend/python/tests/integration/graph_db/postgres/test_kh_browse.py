@@ -1164,8 +1164,8 @@ async def test_a_wide_nodes_child_of_a_class_its_sample_did_not_read_is_asked_of
     monkeypatch.setattr(kh_browse, "BROWSE_MEMORY_MAX", 3)
     real_sets = kh_browse.class_sets
 
-    async def sampled(tx, org_, app_sk, held, only=None) -> object:
-        return await real_sets(tx, org_, app_sk, held, None if only is None else [c for c in only if c != missed])
+    async def sampled(tx, org_, app_sk, held, only=None, *, app_id: str) -> object:
+        return await real_sets(tx, org_, app_sk, held, None if only is None else [c for c in only if c != missed], app_id=app_id)
     monkeypatch.setattr(kh_browse, "class_sets", sampled)
     asked: list[str] = []
     real_check = type(p)._kh_v3_accessible_rows

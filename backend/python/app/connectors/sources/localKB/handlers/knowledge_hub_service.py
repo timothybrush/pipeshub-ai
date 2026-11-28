@@ -522,12 +522,16 @@ class KnowledgeHubService:
 
         if parent_id is None and flatten:
             # The search partitions by connector, so it needs the grants too; a
-            # provider that reads them per connector does so inside each page.
-            if getattr(self.graph_provider, "kh_grants_per_connector", False) is not True:
-                access = _without_apps(
-                    await self.graph_provider.get_knowledge_hub_access_v3(user_key=user_key, org_id=org_id),
-                    excluded,
-                )
+            # provider that reads them per connector does so inside each page,
+            # when it can read them there for this listing now.
+            if getattr(self.graph_provider, "kh_grants_per_connector", False) is not True \
+                    or not await self.graph_provider.kh_pages_read_grants(user_key, org_id, sorted(access["gated_app_ids"])):
+                fresh = await self.graph_provider.get_knowledge_hub_access_v3(user_key=user_key, org_id=org_id)
+                # An App the viewer was gated into after the first read was never asked whether it is hidden (a project's own
+                # file collection): ask it now, as the first read's were, rather than list it
+                gained = sorted(set(fresh.get("gated_app_ids") or ()) - set(access.get("gated_app_ids") or ()) - excluded)
+                hidden_now = frozenset(await self.graph_provider.get_hidden_app_ids(gained)) if gained else frozenset()
+                access = _without_apps(fresh, excluded | hidden_now)
                 if within is not None:
                     access = _only_apps(access, within)
 

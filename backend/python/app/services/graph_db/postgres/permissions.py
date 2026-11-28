@@ -924,12 +924,12 @@ async def _kg_admitted(tx: Tx, org: str, apps: list[str], access: dict[str, Any]
     connector, and one with more undecided rows or classes than a listing evaluates, is left to the walk (the second value)."""
     if not kg_read.enabled() or current_or_system().kind == "system":
         return {}, apps
-    held = KhGrants(held=frozenset(g for ids in access["by_connector"].values() for g in ids))
+    held = KhGrants(held=frozenset(g for ids in access["by_connector"].values() for g in ids), access={"gated_app_ids": list(access["by_connector"])})
     out: dict[str, tuple[set[str], set[str]]] = {}
     rest: list[str] = []
     for a in apps:
         sk = await tx.fetchval(kgl.APP_KEY, org, a) if await kg_read.serves(tx, org, a) else None
-        sets = await class_sets(tx, org, sk, held) if sk is not None else None
+        sets = await class_sets(tx, org, sk, held, app_id=a) if sk is not None else None
         unvouched = sorted(sets["unvouched"]) if sets is not None else []
         q = kgl.Params([org, sk, UNDECIDED_MAX + 1])
         undecided = [r["id"] for r in await tx.fetch(kgl.undecided_sql("", q.add(unvouched)), *q.values)] if sets is not None else None

@@ -1,7 +1,7 @@
 """Unit tests for KnowledgeHubService."""
 
 import logging
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -628,3 +628,38 @@ class TestGetAvailableFilters:
         assert isinstance(result, AvailableFilters)
         assert result.connectors == []
 
+
+
+# ============================================================================
+# the global listing's gate, read again for the grants
+# ============================================================================
+class TestGlobalListingGateRefresh:
+    @pytest.mark.asyncio
+    async def test_an_app_gained_between_the_two_reads_is_asked_whether_it_is_hidden(self, service, mock_graph_provider) -> None:
+        """The listing reads the gate, drops the hidden Apps, then reads it again with the grants. An App the viewer was
+        gated into in between (here a project's own file collection, hidden) is asked too, and stays out of the listing."""
+        from app.connectors.sources.localKB.handlers import knowledge_hub_service as khs
+
+        mock_graph_provider.get_user_by_user_id.return_value = {"_key": "uk1", "email": "viewer@acme.com"}
+        mock_graph_provider.get_knowledge_hub_access_context_v2.return_value = {"grantee_ids": ["uk1"], "gated_app_ids": ["app1"]}
+        mock_graph_provider.get_knowledge_hub_access_v3.return_value = {
+            "grantee_ids": ["uk1"], "gated_app_ids": ["app1", "files-of-a-project"],
+            "by_connector": {"app1": [], "files-of-a-project": ["f1"]},
+        }
+
+        async def hidden(app_ids: list[str], *_a: object, **_kw: object) -> list[str]:
+            return [a for a in app_ids if a == "files-of-a-project"]
+        mock_graph_provider.get_hidden_app_ids.side_effect = hidden
+        seen: list[dict] = []
+
+        from app.connectors.sources.localKB.handlers.kh_search import SearchPage
+
+        async def page(_provider: object, **kw: object) -> SearchPage:
+            seen.append(kw["access"])  # type: ignore[arg-type]
+            return SearchPage(rows=[], total=0, counts_by_type=None, start_index=0, end_index=0, next_cursor=None, prev_cursor=None)
+        with patch.object(khs, "search_page", new=page):
+            await service.get_nodes(user_id="u1", org_id="o1", flattened=True)
+        assert seen, "the global listing read no page"
+        assert seen[0]["gated_app_ids"] == ["app1"]
+        assert "files-of-a-project" not in seen[0]["by_connector"]
+        mock_graph_provider.get_hidden_app_ids.assert_any_await(["files-of-a-project"])

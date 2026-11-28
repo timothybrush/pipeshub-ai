@@ -99,7 +99,7 @@ class KhBrowseMixin(PgBase):
         start, aid = resolved
         # Every gated connector's grants, as the flat listing reads them (``_kh_grants``): the access check and the class verdicts read them all, since a walk can pass
         # through a node of another gated connector; a row's own grant, the seeds and the chain-tops are this App's.
-        gs = await self._kh_grants(aid, org_id, grantee_ids, gated_app_ids, granted_ids, grants_by_connector, user_key, transaction, by_class=by_class, ids_out=grants_out is not None)
+        gs = await self._kh_grants(aid, org_id, grantee_ids, gated_app_ids, granted_ids, grants_by_connector, user_key, transaction, by_class=by_class)
         access, held = gs.access, gs
         tops: list[int] = []
         top = await self._kh_top_grants(org, aid, user_key, gs, transaction) if gs else None
@@ -153,13 +153,13 @@ class KhBrowseMixin(PgBase):
             ancestors = [r for sk, r in (trail[4] if trail else {}).items() if sk != start["sk"] and r["kind"] != 1]
             # a node held whole is decided by the classes of the rows it reads (its arrows add their children's: ``cover_children``); a wider one by every class of the connector
             only = None if rows is None else sorted({r["class_id"] for r in [*rows, *([] if at_app else [start]), *ancestors] if r["class_id"] is not None})
-            sets = await class_sets(tx, org, app_sk, held, only) if served and by_class else None
+            sets = await class_sets(tx, org, app_sk, held, only, app_id=aid) if served and by_class else None
             if sets is None and rows is None and served and by_class:
                 # a connector with more classes than a page evaluates: those of the children the page reads (any other child is undecided, ``_browse_undecided``)
                 c = kgl.Params(list(p.values))
                 c.values[2] = COUNT_CAP + 1
                 kids = (await indexed_fetch(tx, kgl.browse_classes_sql(where, links_param), *c.values))[0][0]
-                sets = await class_sets(tx, org, app_sk, held, sorted({*kids, *(r["class_id"] for r in [*([] if at_app else [start]), *ancestors] if r["class_id"] is not None)}))
+                sets = await class_sets(tx, org, app_sk, held, sorted({*kids, *(r["class_id"] for r in [*([] if at_app else [start]), *ancestors] if r["class_id"] is not None)}), app_id=aid)
             ok, left = self._kh_class_split(rows or [], sets, gs)
             # the children the classes do not decide are asked here only when they are few; otherwise (kg does not serve the connector, or it is mid-sync) they are asked a page at a time
             windowed = rows is not None and (sets is None or len(left) > UNDECIDED_MAX)
@@ -192,7 +192,7 @@ class KhBrowseMixin(PgBase):
         if u == "not_ready":
             return await self._kh_not_ready(org, start_id, at_app=at_app, access=access, transaction=transaction, include_scope=include_scope, include_total=include_total)
         app_id, app_sk, app_doc, hidden, served, sets = (u[k] for k in ("app_id", "app_sk", "app_doc", "hidden", "served", "sets"))
-        if grants_out is not None:
+        if grants_out is not None and not gs.by_sk:
             grants_out[app_id] = sorted(gs.own)
         if u["filtered"]:      # the start is admitted; the filters leave its connector out
             return self._kh_v3_empty_page(start_id, include_scope=include_scope, include_total=include_total, admitted=True)
