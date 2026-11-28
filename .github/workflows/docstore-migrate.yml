@@ -204,6 +204,7 @@ jobs:
                 --expect-suite 'docstore-migrate: carriers on PostgreSQL=10' \
                 --expect-suite 'docstore-migrate: carriers in a whole move=3' \
                 --expect-suite 'docstore-migrate: carriers let go after a rollback=10' \
+                --expect-suite 'docstore-migrate: fields written with their documents=4' \
                 --expect-suite 'docstore-migrate: the control plane carried to PostgreSQL=8' \
                 --expect-suite 'docstore-migrate: ledgers, people=8' \
                 --expect-suite 'docstore-migrate: durable runs, journal and payloads on PostgreSQL=9' \
