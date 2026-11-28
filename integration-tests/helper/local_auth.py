@@ -57,7 +57,6 @@ TEST_CLIENT_SCOPES = (
     "code:read",
     "code:write",
     "config:read",
-    "config:write",
     "crawl:read",
     "crawl:write",
     "crawl:delete",
