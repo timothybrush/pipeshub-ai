@@ -13,6 +13,11 @@ import { clearRefusals } from './refusals';
 
 const IDENT = /^[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*$/;
 
+const sideTables = (): string[] =>
+  [...new Set(MAPPINGS.flatMap((m) => m.sideTables ?? []))].filter((t) =>
+    IDENT.test(t),
+  );
+
 type ResetReport = { ok: boolean; message: string; tables: number };
 
 /** Under the rollback's lock: a reset never runs while a rollback (or its release) does. */
@@ -80,6 +85,15 @@ async function resetLocked(
     await clearRefusals(k);
     for (const t of unique)
       await k.query(`/* pipeshub:reset.delete */ DELETE FROM ${t}`);
+    // With the migrate login: the import role holds no DELETE on a global table (rule 26), and no foreign key can tie these rows
+    // to their organisation (rule 8b: a key from a global table into an org table is an existence oracle). Still inside this
+    // unit, under the exclusive copy lock: no copy batch commits an organisation or its claim until the rows and their side rows
+    // are both gone. Should this unit then not commit, its organisations stay without their slugs until reset runs again (it
+    // failed, so it is run again) or the copy claims them anew.
+    for (const t of sideTables())
+      await rt.migratePool.query(
+        `/* pipeshub:reset.delete_side */ DELETE FROM ${t}`,
+      );
   });
   await clearMarkers(rt);
   return {

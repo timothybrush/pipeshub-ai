@@ -15,7 +15,7 @@ import { readMongoFence } from '../../../src/scripts/docstore-migrate/fence';
 import { MARKER_COLLECTION, follow, followStart, resync } from '../../../src/scripts/docstore-migrate/follow';
 import { reset } from '../../../src/scripts/docstore-migrate/reset';
 import { postLoad, runMigrateJob } from '../../../src/scripts/docstore-migrate/schema';
-import { JobState, canon } from '../../../src/scripts/docstore-migrate/state';
+import { COPY_LOCK_KEY, JobState, canon } from '../../../src/scripts/docstore-migrate/state';
 import { ADMIN_A, ORG_A, ORG_B, SERVICE_A, identityDocs } from './fixtures/identity';
 
 import { haveMongod } from './mongo-harness';
@@ -362,6 +362,44 @@ for (const bin of PG_BINS.length ? PG_BINS : ['none']) {
         } finally {
           Object.assign(w.rt.cfg, { batchDelayMs: 0 });
         }
+      });
+
+      it('reset lets the slugs go under the copy lock, and one that fails there changes nothing and is finished by the next', async () => {
+        const slugs = async (): Promise<number> => Number((await sql('SELECT count(*)::int AS n FROM identity.org_slugs'))[0].n);
+        const orgs = async (): Promise<number> => Number((await sql('SELECT count(*)::int AS n FROM identity.orgs'))[0].n);
+        await bulk(w.rt, await JobState.attach(w.rt), { log });
+        expect(await slugs(), 'the copy claimed the chosen slugs').to.be.greaterThan(0);
+        const pool = w.rt.migratePool as unknown as { query: (...a: unknown[]) => Promise<unknown> };
+        const real = pool.query.bind(pool);
+        const lockFree: boolean[] = [];
+        let fail = true;
+        pool.query = async (...a: unknown[]) => {
+          if (String(a[0]).includes('pipeshub:reset.delete_side')) {
+            // a copy batch takes the copy lock shared before it writes: it cannot while reset lets the slugs go
+            lockFree.push(
+              await w.stack.admin(async (c) => {
+                const ok = (await c.query('SELECT pg_try_advisory_lock_shared($1) AS ok', [COPY_LOCK_KEY])).rows[0].ok as boolean;
+                if (ok) await c.query('SELECT pg_advisory_unlock_shared($1)', [COPY_LOCK_KEY]);
+                return ok;
+              }),
+            );
+            if (fail) throw new Error('stopped while letting the slugs go');
+          }
+          return real(...a);
+        };
+        try {
+          expect(await reset(w.rt, { force: false }).then(() => 'finished', (e: Error) => e.message)).to.equal('stopped while letting the slugs go');
+          expect(await orgs(), 'the unit rolled back: the organisations stay').to.be.greaterThan(0);
+          expect(await slugs(), 'and so do their slugs').to.be.greaterThan(0);
+          fail = false;
+          expect((await reset(w.rt, { force: false })).ok).to.equal(true);
+        } finally {
+          pool.query = real;
+        }
+        expect(lockFree, 'the copy lock was held both times').to.deep.equal([false, false]);
+        for (const [t, rows] of Object.entries(await snapshot())) expect(rows, t).to.deep.equal([]);
+        await bulk(w.rt, await JobState.attach(w.rt), { log });
+        expect(await slugs(), 'the copy claims them again').to.be.greaterThan(0);
       });
 
       it('refuses once MongoDB is marked retired, and goes ahead when forced', async () => {
