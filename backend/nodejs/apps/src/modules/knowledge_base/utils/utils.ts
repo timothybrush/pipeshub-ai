@@ -117,6 +117,41 @@ export const displayFileName = (pf: ProcessedFile): string => {
  * If a redirect URL is provided (for direct upload), returns an upload promise that must be awaited.
  * Event publishing is handled by Python service after all uploads complete.
  */
+// A per-file failure reaches the uploader's screen: at most this many characters of it.
+const MAX_UPLOAD_ERROR_LENGTH = 300;
+
+/**
+ * What a failed file's upload tells the uploader: the server's own message
+ * (`response.data.error.message`, then `response.data.message`), else the
+ * error's message, else `fallback`. Only a non-empty string is taken, its
+ * whitespace collapsed and its length capped, so no object, stack or page body
+ * reaches the client.
+ */
+export const uploadErrorMessage = (err: unknown, fallback: string): string => {
+  const data: unknown = (
+    err as { response?: { data?: unknown } } | null | undefined
+  )?.response?.data;
+  const body =
+    typeof data === 'object' && data !== null
+      ? (data as { error?: { message?: unknown }; message?: unknown })
+      : undefined;
+  const candidates = [
+    body?.error?.message,
+    body?.message,
+    err instanceof Error ? err.message : undefined,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate !== 'string') continue;
+    const text = candidate.replace(/\s+/g, ' ').trim();
+    if (text !== '') {
+      return text.length > MAX_UPLOAD_ERROR_LENGTH
+        ? `${text.slice(0, MAX_UPLOAD_ERROR_LENGTH - 1)}…`
+        : text;
+    }
+  }
+  return fallback;
+};
+
 export const createPlaceholderDocument = async (
   req: AuthenticatedUserRequest,
   file: FileBufferInfo,
@@ -450,7 +485,7 @@ export const processUploadsInBackground = async (
           } catch (uploadError: any) {
             failedResults.push({
               result,
-              error: uploadError.message || 'Upload failed',
+              error: uploadErrorMessage(uploadError, 'Upload failed'),
             });
             logger.debug('Background upload failed', {
               error_class: classifyError(uploadError),

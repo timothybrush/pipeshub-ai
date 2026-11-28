@@ -8,7 +8,7 @@ import {
   StorageResponseMetadata,
   ProcessedFile,
 } from '../../../../src/modules/knowledge_base/utils/utils'
-import { processUploadsInBackground, uploadFileToSignedUrl, UPLOAD_STORAGE_CONCURRENCY } from '../../../../src/modules/knowledge_base/utils/utils';
+import { processUploadsInBackground, uploadErrorMessage, uploadFileToSignedUrl, UPLOAD_STORAGE_CONCURRENCY } from '../../../../src/modules/knowledge_base/utils/utils';
 import { ConnectorServiceCommand } from '../../../../src/libs/commands/connector_service/connector.service.command'
 
 const TEST_GRANT_SCOPE = { secret: 'test-scoped-secret', userId: 'user-1' }
@@ -939,5 +939,33 @@ describe('Knowledge Base Utils - coverage', () => {
         expect(counts).to.deep.equal({ succeeded: 1, failed: 2 })
       })
     })
+  })
+})
+
+describe('uploadErrorMessage', () => {
+  const withBody = (data: unknown, message = 'Request failed') => Object.assign(new Error(message), { response: { data } })
+
+  it("takes the server's error.message, then its message, then the error's own", () => {
+    expect(uploadErrorMessage(withBody({ error: { message: 'Quota exceeded' }, message: 'other' }), 'fallback')).to.equal('Quota exceeded')
+    expect(uploadErrorMessage(withBody({ message: 'File too large' }), 'fallback')).to.equal('File too large')
+    expect(uploadErrorMessage(withBody({}), 'fallback')).to.equal('Request failed')
+    expect(uploadErrorMessage(new Error('Storage full'), 'fallback')).to.equal('Storage full')
+  })
+
+  it('passes on only a non-empty string: never an object, a page or a stack', () => {
+    expect(uploadErrorMessage(withBody({ error: { message: { stack: 'at x' } } }, ''), 'fallback')).to.equal('fallback')
+    expect(uploadErrorMessage(withBody('<html>proxy</html>', ''), 'fallback')).to.equal('fallback')
+    expect(uploadErrorMessage(withBody({ message: '   ' }), 'fallback')).to.equal('Request failed')
+    expect(uploadErrorMessage('a string thrown', 'fallback')).to.equal('fallback')
+    expect(uploadErrorMessage(undefined, 'fallback')).to.equal('fallback')
+    const stacked = uploadErrorMessage(withBody({ message: 'line one\n    at internal (/srv/app.js:1:1)' }), 'fallback')
+    expect(stacked).to.equal('line one at internal (/srv/app.js:1:1)')
+    expect(stacked).to.not.include('\n')
+  })
+
+  it('caps a long message', () => {
+    const long = uploadErrorMessage(withBody({ message: 'x'.repeat(1000) }), 'fallback')
+    expect(long).to.have.lengthOf(300)
+    expect(long.endsWith('…')).to.equal(true)
   })
 })

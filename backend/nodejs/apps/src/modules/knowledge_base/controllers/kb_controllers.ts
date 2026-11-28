@@ -25,6 +25,7 @@ import {
   uploadNextVersionToStorage,
   createPlaceholderDocument,
   processUploadsInBackground,
+  uploadErrorMessage,
   logUploadBatchEnd,
   FileUploadMetadata,
   PlaceholderResultWithMetadata,
@@ -834,17 +835,9 @@ export const deleteFolder =
     }
   };
 
-/** Best-effort human-readable message from a placeholder-creation failure. */
-const placeholderErrorMessage = (err: unknown): string => {
-  if (axios.isAxiosError(err)) {
-    return (
-      err.response?.data?.error?.message ||
-      err.response?.data?.message ||
-      err.message
-    );
-  }
-  return err instanceof Error ? err.message : 'Failed to create placeholder document';
-};
+/** What the uploader is told when a file's placeholder could not be created. */
+const placeholderErrorMessage = (err: unknown): string =>
+  uploadErrorMessage(err, 'Failed to create placeholder document');
 
 // SSE headers for the streaming upload response. No global compression is
 // applied (it would buffer SSE), `X-Accel-Buffering: no` disables proxy

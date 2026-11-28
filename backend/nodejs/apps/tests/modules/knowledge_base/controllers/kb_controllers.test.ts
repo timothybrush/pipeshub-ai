@@ -1382,10 +1382,9 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-        expect(res.json.calledOnce).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
+      expect(res.json.calledOnce).to.be.true
     })
 
     it('should include parentType and parentId in url when present', async () => {
@@ -1404,9 +1403,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
     })
 
     it('should forward flattened=true query parameter to connector backend', async () => {
@@ -1425,11 +1423,10 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(executeStub.calledOnce).to.be.true
-        const uri = executeStub.firstCall.thisValue.uri as string
-        expect(uri).to.include('flattened=true')
-      }
+      sinon.assert.notCalled(next)
+      expect(executeStub.calledOnce).to.be.true
+      const uri = executeStub.firstCall.thisValue.uri as string
+      expect(uri).to.include('flattened=true')
     })
 
     it('should forward flattened=false query parameter to connector backend', async () => {
@@ -1448,11 +1445,10 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(executeStub.calledOnce).to.be.true
-        const uri = executeStub.firstCall.thisValue.uri as string
-        expect(uri).to.include('flattened=false')
-      }
+      sinon.assert.notCalled(next)
+      expect(executeStub.calledOnce).to.be.true
+      const uri = executeStub.firstCall.thisValue.uri as string
+      expect(uri).to.include('flattened=false')
     })
 
     it('should not include flattened parameter when omitted from query', async () => {
@@ -1471,11 +1467,10 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(executeStub.calledOnce).to.be.true
-        const uri = executeStub.firstCall.thisValue.uri as string
-        expect(uri).to.not.include('flattened')
-      }
+      sinon.assert.notCalled(next)
+      expect(executeStub.calledOnce).to.be.true
+      const uri = executeStub.firstCall.thisValue.uri as string
+      expect(uri).to.not.include('flattened')
     })
 
     it('should call next with error when connector fails', async () => {
@@ -1508,10 +1503,9 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.called).to.be.true
-        expect(res.json.calledOnce).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.called).to.be.true
+      expect(res.json.calledOnce).to.be.true
     })
 
     it('should call next when connector returns non-200', async () => {
@@ -1549,10 +1543,9 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-        expect(res.json.calledOnce).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
+      expect(res.json.calledOnce).to.be.true
     })
   })
 
@@ -1572,9 +1565,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
     })
 
     it('should list knowledge bases with search parameter', async () => {
@@ -1592,9 +1584,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
     })
 
     it('should list knowledge bases with permissions filter', async () => {
@@ -1612,9 +1603,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
     })
   })
 
@@ -1635,9 +1625,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
     })
 
     it('should send "name" field (not "groupName") to connector backend', async () => {
@@ -1656,12 +1645,11 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(executeStub.calledOnce).to.be.true
-        const requestBody = JSON.parse(executeStub.firstCall.thisValue.body as string)
-        expect(requestBody).to.have.property('name', 'Updated KB')
-        expect(requestBody).to.not.have.property('groupName')
-      }
+      sinon.assert.notCalled(next)
+      expect(executeStub.calledOnce).to.be.true
+      const requestBody = JSON.parse(executeStub.firstCall.thisValue.body as string)
+      expect(requestBody).to.have.property('name', 'Updated KB')
+      expect(requestBody).to.not.have.property('groupName')
     })
   })
 
@@ -1681,9 +1669,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
     })
   })
 
@@ -1704,9 +1691,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.json.calledOnce).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.json.calledOnce).to.be.true
     })
 
     it('should create a nested folder successfully', async () => {
@@ -1726,9 +1712,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.json.calledOnce).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.json.calledOnce).to.be.true
     })
   })
 
@@ -1749,9 +1734,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
     })
   })
 
@@ -1771,9 +1755,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
     })
   })
 
@@ -1793,9 +1776,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
     })
   })
 
@@ -1816,9 +1798,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
     })
 
     it('forwards force: true to the connector service, and force: false when the request has none', async () => {
@@ -1854,9 +1835,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
     })
   })
 
@@ -1877,9 +1857,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
     })
   })
 
@@ -1899,9 +1878,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
     })
   })
 
@@ -1922,11 +1900,10 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(201)).to.be.true
-        const response = res.json.firstCall.args[0]
-        expect(response).to.have.property('kbId', 'kb-1')
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(201)).to.be.true
+      const response = res.json.firstCall.args[0]
+      expect(response).to.have.property('kbId', 'kb-1')
     })
 
     it('should create permission for teams without role', async () => {
@@ -1945,9 +1922,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(201)).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(201)).to.be.true
     })
 
     it('should call next when connector returns error', async () => {
@@ -1987,11 +1963,10 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-        const response = res.json.firstCall.args[0]
-        expect(response).to.have.property('kbId', 'kb-1')
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
+      const response = res.json.firstCall.args[0]
+      expect(response).to.have.property('kbId', 'kb-1')
     })
 
     it('should call next when connector returns non-200', async () => {
@@ -2031,9 +2006,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
     })
   })
 
@@ -2053,12 +2027,11 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-        const response = res.json.firstCall.args[0]
-        expect(response).to.have.property('permissions')
-        expect(response).to.have.property('totalCount', 1)
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
+      const response = res.json.firstCall.args[0]
+      expect(response).to.have.property('permissions')
+      expect(response).to.have.property('totalCount', 1)
     })
 
     it('should call next when connector returns non-200', async () => {
@@ -2096,11 +2069,10 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-        const response = res.json.firstCall.args[0]
-        expect(response).to.have.property('totalRecords', 100)
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
+      const response = res.json.firstCall.args[0]
+      expect(response).to.have.property('totalRecords', 100)
     })
 
     it('should call next when connector returns non-200', async () => {
@@ -2246,9 +2218,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
       expect(execStub.firstCall.args[2]).to.not.have.property('X-Is-Admin')
     })
 
@@ -2269,9 +2240,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
       expect(execStub.firstCall.args[2]).to.not.have.property('X-Is-Admin')
     })
   })
@@ -2299,10 +2269,9 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-        expect(mockRecordRelation.resyncConnectorRecords.calledOnce).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
+      expect(mockRecordRelation.resyncConnectorRecords.calledOnce).to.be.true
     })
 
     it('should call next when connector is not active', async () => {
@@ -2343,9 +2312,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
     })
   })
 
@@ -2354,6 +2322,7 @@ describe('Knowledge Base Controller', () => {
   // -----------------------------------------------------------------------
   describe('uploadRecords (deep happy paths)', () => {
     it('should upload records successfully with placeholder creation', async () => {
+      stubFolderUploadPreValidationSuccess()
       const createPlaceholderStub = sinon.stub(kbUtils, 'createPlaceholderDocument').resolves({
         documentId: 'doc-123',
         documentName: 'test-file',
@@ -2385,20 +2354,21 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-        const response = res.json.firstCall.args[0]
-        expect(response).to.have.property('status', 'processing')
-        expect(response).to.have.property('records')
-        expect(response.records).to.be.an('array').with.lengthOf(1)
-        expect(response.records[0]).to.have.property('recordName', 'test-file')
-        expect(response.records[0]).to.have.property('recordType')
-        expect(response.records[0]).to.have.property('origin')
-        expect(processUploadsStub.calledOnce).to.be.true
-      }
+      expect(next.called).to.be.false
+      expect(res.writeHead.calledWith(200)).to.be.true
+      expect(createPlaceholderStub.calledOnce).to.be.true
+      expect(processUploadsStub.calledOnce).to.be.true
+      // The placeholder the upload created, and the file it stands for, go to the background upload.
+      const [batch] = processUploadsStub.firstCall.args
+      expect(batch).to.have.lengthOf(1)
+      expect(batch[0]!.placeholderResult).to.deep.equal({ documentId: 'doc-123', documentName: 'test-file' })
+      expect(batch[0]!.metadata).to.include({ fileName: 'test.pdf', extension: 'pdf', filePath: 'docs/test.pdf' })
+      const done = getStreamedEvents(res).find((e) => e.event === 'done')
+      expect(done?.data.summary).to.deep.equal({ total: 1, succeeded: 1, failed: 0 })
     })
 
     it('should handle partial failures - some files fail placeholder creation', async () => {
+      stubFolderUploadPreValidationSuccess()
       const createPlaceholderStub = sinon.stub(kbUtils, 'createPlaceholderDocument')
       createPlaceholderStub.onFirstCall().resolves({
         documentId: 'doc-1',
@@ -2440,17 +2410,19 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-        const response = res.json.firstCall.args[0]
-        expect(response.successfulFiles).to.equal(1)
-        expect(response.failedFiles).to.equal(1)
-        expect(response.records).to.have.lengthOf(1)
-      }
+      sinon.assert.notCalled(next)
+      expect(res.writeHead.calledWith(200)).to.be.true
+      const [batch] = (kbUtils.processUploadsInBackground as sinon.SinonStub).firstCall.args
+      expect(batch.map((b: any) => b.placeholderResult.documentName)).to.deep.equal(['file1'])
+      const failed = getStreamedEvents(res).filter((e) => e.event === 'file:failed')
+      expect(failed.map((e) => [e.data.fileName, e.data.stage, e.data.errors])).to.deep.equal([['file2.pdf', 'upload', ['Storage full']]])
+      expect(getStreamedEvents(res).find((e) => e.event === 'done')?.data.summary).to.deep.equal({ total: 2, succeeded: 1, failed: 1 })
     })
 
     it('should handle all files failing placeholder creation', async () => {
+      stubFolderUploadPreValidationSuccess()
       sinon.stub(kbUtils, 'createPlaceholderDocument').rejects(new Error('Storage error'))
+      const processUploads = sinon.stub(kbUtils, 'processUploadsInBackground')
 
       const handler = uploadRecords(
         createMockKeyValueStore(),
@@ -2477,15 +2449,16 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-        const response = res.json.firstCall.args[0]
-        expect(response.status).to.equal('failed')
-        expect(response.records).to.have.lengthOf(0)
-      }
+      sinon.assert.notCalled(next)
+      expect(res.writeHead.calledWith(200)).to.be.true
+      sinon.assert.notCalled(processUploads)
+      const failed = getStreamedEvents(res).filter((e) => e.event === 'file:failed')
+      expect(failed.map((e) => [e.data.fileName, e.data.stage, e.data.errors])).to.deep.equal([['file1.pdf', 'upload', ['Storage error']]])
+      expect(getStreamedEvents(res).find((e) => e.event === 'done')?.data.summary).to.deep.equal({ total: 1, succeeded: 0, failed: 1 })
     })
 
     it('should handle file without last modified timestamp', async () => {
+      stubFolderUploadPreValidationSuccess()
       sinon.stub(kbUtils, 'createPlaceholderDocument').resolves({
         documentId: 'doc-1',
         documentName: 'file-no-mod',
@@ -2516,16 +2489,16 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-        const response = res.json.firstCall.args[0]
-        expect(response.records).to.have.lengthOf(1)
-        // sourceCreatedAtTimestamp should be set to currentTime (not 0)
-        expect(response.records[0].sourceCreatedAtTimestamp).to.be.above(0)
-      }
+      sinon.assert.notCalled(next)
+      expect(res.writeHead.calledWith(200)).to.be.true
+      const [batch] = (kbUtils.processUploadsInBackground as sinon.SinonStub).firstCall.args
+      // lastModified 0 is not a time: the upload stamps the file with the current time instead
+      expect(batch[0].metadata.validLastModified).to.be.above(0)
+      expect(getStreamedEvents(res).find((e) => e.event === 'done')?.data.summary).to.deep.equal({ total: 1, succeeded: 1, failed: 0 })
     })
 
     it('should handle file with path containing slashes', async () => {
+      stubFolderUploadPreValidationSuccess()
       sinon.stub(kbUtils, 'createPlaceholderDocument').resolves({
         documentId: 'doc-1',
         documentName: 'nested-file',
@@ -2556,14 +2529,15 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-        const response = res.json.firstCall.args[0]
-        expect(response.records).to.have.lengthOf(1)
-      }
+      sinon.assert.notCalled(next)
+      expect(res.writeHead.calledWith(200)).to.be.true
+      const [batch] = (kbUtils.processUploadsInBackground as sinon.SinonStub).firstCall.args
+      expect(batch[0].metadata).to.include({ fileName: 'report.pdf', filePath: 'documents/reports/report.pdf', extension: 'pdf' })
+      expect(getStreamedEvents(res).find((e) => e.event === 'done')?.data.summary).to.deep.equal({ total: 1, succeeded: 1, failed: 0 })
     })
 
     it('should handle file without extension', async () => {
+      stubFolderUploadPreValidationSuccess()
       sinon.stub(kbUtils, 'createPlaceholderDocument').resolves({
         documentId: 'doc-1',
         documentName: 'no-ext-file',
@@ -2594,12 +2568,15 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.writeHead.calledWith(200)).to.be.true
+      const [batch] = (kbUtils.processUploadsInBackground as sinon.SinonStub).firstCall.args
+      expect(batch[0].metadata).to.include({ fileName: 'Dockerfile', extension: null })
+      expect(getStreamedEvents(res).find((e) => e.event === 'done')?.data.summary).to.deep.equal({ total: 1, succeeded: 1, failed: 0 })
     })
 
     it('should handle placeholder error with response.data.error.message structure', async () => {
+      stubFolderUploadPreValidationSuccess()
       const err: any = new Error('Placeholder failed')
       err.response = { data: { error: { message: 'Quota exceeded' } } }
       sinon.stub(kbUtils, 'createPlaceholderDocument').rejects(err)
@@ -2628,14 +2605,16 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-        const response = res.json.firstCall.args[0]
-        expect(response.status).to.equal('failed')
-      }
+      sinon.assert.notCalled(next)
+      expect(res.writeHead.calledWith(200)).to.be.true
+      // the storage service's own message, not the error's
+      const failed = getStreamedEvents(res).filter((e) => e.event === 'file:failed')
+      expect(failed.map((e) => [e.data.fileName, e.data.stage, e.data.errors])).to.deep.equal([['file.pdf', 'upload', ['Quota exceeded']]])
+      expect(getStreamedEvents(res).find((e) => e.event === 'done')?.data.summary).to.deep.equal({ total: 1, succeeded: 0, failed: 1 })
     })
 
     it('should handle placeholder error with response.data.message structure', async () => {
+      stubFolderUploadPreValidationSuccess()
       const err: any = new Error('Placeholder failed')
       err.response = { data: { message: 'File too large' } }
       sinon.stub(kbUtils, 'createPlaceholderDocument').rejects(err)
@@ -2664,11 +2643,50 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-        const response = res.json.firstCall.args[0]
-        expect(response.status).to.equal('failed')
-      }
+      sinon.assert.notCalled(next)
+      expect(res.writeHead.calledWith(200)).to.be.true
+      // the server's message when it gives no error object
+      const failed = getStreamedEvents(res).filter((e) => e.event === 'file:failed')
+      expect(failed.map((e) => [e.data.fileName, e.data.stage, e.data.errors])).to.deep.equal([['big.pdf', 'upload', ['File too large']]])
+      expect(getStreamedEvents(res).find((e) => e.event === 'done')?.data.summary).to.deep.equal({ total: 1, succeeded: 0, failed: 1 })
+    })
+
+    it("should report the error's own message when the placeholder error carries no server message", async () => {
+      stubFolderUploadPreValidationSuccess()
+      const err: any = new Error('Placeholder failed')
+      err.response = { data: '<html>proxy error</html>' }
+      sinon.stub(kbUtils, 'createPlaceholderDocument').rejects(err)
+
+      const handler = uploadRecords(
+        createMockKeyValueStore(),
+        createMockAppConfig(),
+      )
+      const req = createMockRequest({
+        params: { kbId: 'kb-1' },
+        body: {
+          fileBuffers: [
+            {
+              originalname: 'big.pdf',
+              mimetype: 'application/pdf',
+              size: 999999999,
+              filePath: 'big.pdf',
+              lastModified: Date.now(),
+              buffer: Buffer.from('data'),
+            },
+          ],
+        },
+      })
+      const res = createMockResponse()
+      const next = createMockNext()
+
+      await handler(req, res, next)
+
+      sinon.assert.notCalled(next)
+      expect(res.writeHead.calledWith(200)).to.be.true
+      // a body that is no message object (a proxy's page) is never passed on
+      const failed = getStreamedEvents(res).filter((e) => e.event === 'file:failed')
+      expect(failed.map((e) => [e.data.fileName, e.data.stage, e.data.errors])).to.deep.equal([['big.pdf', 'upload', ['Placeholder failed']]])
+      expect(getStreamedEvents(res).find((e) => e.event === 'done')?.data.summary).to.deep.equal({ total: 1, succeeded: 0, failed: 1 })
     })
 
     // Regression: files the processor rejected up front (oversize / unsupported
@@ -3070,13 +3088,12 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-        const response = res.json.firstCall.args[0]
-        expect(response.message).to.equal('Record updated successfully')
-        expect(response.record.recordName).to.equal('Renamed Record')
-        expect(response.fileUploaded).to.be.false
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
+      const response = res.json.firstCall.args[0]
+      expect(response.message).to.equal('Record updated successfully')
+      expect(response.record.recordName).to.equal('Renamed Record')
+      expect(response.fileUploaded).to.be.false
     })
 
     it('should call next when connector returns null data', async () => {
@@ -3230,9 +3247,8 @@ describe('Knowledge Base Controller', () => {
 
       await handler(req, res, next)
 
-      if (!next.called) {
-        expect(res.status.calledWith(200)).to.be.true
-      }
+      sinon.assert.notCalled(next)
+      expect(res.status.calledWith(200)).to.be.true
     })
 
     it('should call next when storage upload fails with 404', async () => {
