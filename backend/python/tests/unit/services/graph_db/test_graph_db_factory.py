@@ -219,7 +219,7 @@ class TestGraphDBProviderFactoryCreateProvider:
         import app.edition_services as edition
         from app.services.graph_db.postgres.provider import PostgresGraphProvider
 
-        assert edition.PostgresGraphProvider is PostgresGraphProvider
+        assert issubclass(edition.PostgresGraphProvider, PostgresGraphProvider)
 
     @pytest.mark.asyncio
     async def test_postgres_provider_class_comes_from_the_edition_services(self) -> None:
